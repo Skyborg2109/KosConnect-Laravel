@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist Saya - KosConnect</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* == CSS RESET & DASAR == */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* == 1. HEADER & NAVIGASI ATAS == */
+        .main-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-container .fa-home {
+            font-size: 24px;
+            color: #0d6efd;
+        }
+
+        .logo-container h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .main-nav ul {
+            list-style: none;
+            display: flex;
+            gap: 15px;
+        }
+
+        .main-nav ul li a {
+            font-size: 14px;
+            color: #555;
+            padding-bottom: 5px;
+        }
+        
+        /* Memberi tanda aktif pada "Wishlist" */
+        .main-nav ul li a.active {
+            color: #0d6efd;
+            font-weight: 600;
+            border-bottom: 2px solid #0d6efd;
+        }
+
+        .btn-logout {
+            background-color: #dc3545;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* == 2. BANNER SELAMAT DATANG (DARI HALAMAN SEBELUMNYA) == */
+        .welcome-banner {
+            background-color: #0d6efd;
+            color: #ffffff;
+            padding: 24px 30px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        /* ... (Style banner lainnya tetap ada jika dibutuhkan) ... */
+
+
+        /* == 3. GRID KARTU STATISTIK (DARI HALAMAN SEBELUMNYA) == */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        /* ... (Style stat-card lainnya tetap ada jika dibutuhkan) ... */
+        
+
+        /* == 4. REKOMENDASI / WISHLIST KOS == */
+        .recommendations .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .recommendations .section-header h3 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        /* TOMBOL HAPUS SEMUA BARU */
+        .btn-clear-all {
+            background-color: #dc3545; /* Merah */
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        .kos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .kos-card {
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .kos-card .card-header {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 22px;
+        }
+        
+        .kos-card .card-header .fa-heart.active {
+            color: #dc3545;
+        }
+        
+        .kos-card .card-header .fa-heart.inactive {
+            color: #adb5bd;
+        }
+
+        .card-image-placeholder {
+            height: 180px;
+            background-color: #e9ecef;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #adb5bd;
+        }
+        
+        .card-image-placeholder .fa-home { font-size: 40px; margin-bottom: 8px; }
+        .card-content { padding: 16px; }
+        .card-content h4 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .card-content .rating { font-size: 14px; color: #f59e0b; margin-bottom: 8px; }
+        .card-content .rating span { color: #6c757d; margin-left: 4px; }
+        .card-content .address { font-size: 14px; color: #495057; margin-bottom: 8px; }
+        .card-content .price { font-size: 16px; font-weight: 700; color: #212529; margin-bottom: 12px; }
+        .card-content .price small { font-weight: 400; color: #6c757d; }
+        .card-content .facilities { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .card-content .facilities span { background-color: #f1f3f5; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #495057; }
+
+
+        /* == MODIFIKASI KUNCI PADA BAGIAN TOMBOL KARTU == */
+        .card-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Tetap 2 kolom */
+            gap: 8px;
+        }
+        
+        .card-buttons .btn-detail {
+            background-color: #343a40;
+            color: #ffffff;
+        }
+
+        .card-buttons .btn-contact {
+            background-color: #198754;
+            color: #ffffff;
+        }
+
+        .card-buttons .btn-rent {
+            background-color: #0d6efd;
+            color: #ffffff;
+            /* Perhatikan: 'grid-column' dan 'margin-top' dihilangkan */
+            /* Ini membuat tombolnya pas di grid 2x2 */
+        }
+        
+        /* TOMBOL HAPUS BARU DI DALAM KARTU */
+        .card-buttons .btn-remove {
+            background-color: #dc3545; /* Merah */
+            color: #ffffff;
+        }
+
+        /* == CSS DARI HALAMAN SEBELUMNYA (FILTER & ACTIVITY) == */
+        /* == (Ini tetap di sini agar style konsisten jika Anda ingin menambahkannya lagi) == */
+        .filter-section {
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        .search-bar-container { display: flex; gap: 16px; width: 100%; }
+        .search-input-wrapper { position: relative; flex-grow: 1; }
+        .search-input-wrapper .fa-search { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #adb5bd; }
+        .search-input-wrapper input { width: 100%; padding: 12px 20px 12px 40px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
+        .search-bar-container select { padding: 0 16px; border: 1px solid #ced4da; border-radius: 4px; background-color: #fff; font-size: 14px; color: #495057; }
+        .btn-search { background-color: #0d6efd; color: #ffffff; border: none; border-radius: 4px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .quick-filter-container { display: flex; align-items: center; gap: 10px; margin-top: 16px; border-top: 1px solid #f1f3f5; padding-top: 16px; }
+        .quick-filter-label { font-size: 14px; font-weight: 500; color: #495057; }
+        .filter-tag { background-color: #f8f9fa; border: 1px solid #dee2e6; color: #343a40; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .clear-filter-btn { background-color: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+        .activity-section { background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; }
+        .activity-section h3 { font-size: 18px; font-weight: 600; padding: 16px 24px; border-bottom: 1px solid #e9ecef; }
+        .activity-section .activity-content { padding: 80px 24px; text-align: center; color: #6c757d; font-size: 16px; }
+
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo-container">
+            <i class="fas fa-home"></i>
+            <h1>KosConnect</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#">Beranda</a></li>
+                <li><a href="#" class="active">Wishlist</a></li> <li><a href="#">Booking</a></li>
+                <li><a href="#">Daftar Kos</a></li>
+                <li><a href="#">Sewa Saya</a></li>
+                <li><a href="#">Review</a></li>
+                <li><a href="#">FeedBack</a></li>
+                <li><a href="#">Pembayaran</a></li>
+                <li><a href="#">Profil</a></li>
+            </ul>
+        </nav>
+        <a href="#" class="btn-logout">Logout</a>
+    </header>
+
+    <main class="container">
+        
+        <section class="recommendations"> <div class="section-header">
+                <h3>Wishlist Saya</h3>
+                <button class="btn-clear-all">Hapus Semua</button>
+            </div>
+            
+            <div class="kos-grid">
+                
+                <article class="kos-card">
+                    <div class="card-header">
+                        <i class="fas fa-heart active"></i> </div>
+                    <div class="card-image-placeholder">
+                        <i class="fas fa-home"></i>
+                        <span>Foto Kos</span>
+                    </div>
+                    <div class="card-content">
+                        <h4>Kos Melati Indah</h4>
+                        <div class="rating">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                            <span>(4.5)</span>
+                        </div>
+                        <p class="address">Jl. Melati Indah 15, Yogyakarta</p>
+                        <p class="price">Rp 800.000 <small>/Bulan</small></p>
+                        <div class="facilities">
+                            <span>WiFi</span>
+                            <span>AC</span>
+                            <span>Kamar Mandi Dalam</span>
+                        </div>
+                        <div class="card-buttons">
+                            <button class="btn btn-detail">Lihat Detail</button>
+                            <button class="btn btn-contact">Hubungi</button>
+                            <button class="btn btn-rent">Sewa Sekarang</button>
+                            <button class="btn btn-remove">Hapus</button> </div>
+                    </div>
+                </article>
+
+                <article class="kos-card">
+                    <div class="card-header">
+                        <i class="fas fa-heart active"></i> </div>
+                    <div class="card-image-placeholder">
+                        <i class="fas fa-home"></i>
+                        <span>Foto Kos</span>
+                    </div>
+                    <div class="card-content">
+                        <h4>Kos Mawar Residence</h4>
+                        <div class="rating">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <span>(4.8)</span>
+                        </div>
+                        <p class="address">Jl. Mawar Rojo 1/A 8, Jakarta Selatan</p>
+                        <p class="price">Rp 1.200.000 <small>/Bulan</small></p>
+                        <div class="facilities">
+                            <span>WiFi</span>
+                            <span>AC</span>
+                            <span>Kamar Mandi Dalam</span>
+                        </div>
+                        <div class="card-buttons">
+                            <button class="btn btn-detail">Lihat Detail</button>
+                            <button class="btn btn-contact">Hubungi</button>
+                            <button class="btn btn-rent">Sewa Sekarang</button>
+                            <button class="btn btn-remove">Hapus</button> </div>
+                    </div>
+                </article>
+
+                <article class="kos-card">
+                    <div class="card-header">
+                        <i class="fas fa-heart active"></i> </div>
+                    <div class="card-image-placeholder">
+                        <i class="fas fa-home"></i>
+                        <span>Foto Kos</span>
+                    </div>
+                    <div class="card-content">
+                        <h4>Kos Anggrek Putih</h4>
+                        <div class="rating">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <span>(4.2)</span>
+                        </div>
+                        <p class="address">Jl. Anggrek No. 22, Bandung</p>
+                        <p class="price">Rp 600.000 <small>/Bulan</small></p>
+                        <div class="facilities">
+                            <span>WiFi</span>
+                            <span>Kamar Mandi Dalam</span>
+                            <span>Parkir</span>
+                        </div>
+                        <div class="card-buttons">
+                            <button class="btn btn-detail">Lihat Detail</button>
+                            <button class="btn btn-contact">Hubungi</button>
+                            <button class="btn btn-rent">Sewa Sekarang</button>
+                            <button class="btn btn-remove">Hapus</button> </div>
+                    </div>
+                </article>
+
+            </div>
+        </section>
+
+    </main>
+    
+</body>
+</html>

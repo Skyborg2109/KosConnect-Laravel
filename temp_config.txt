@@ -1,0 +1,2 @@
+APP_URL: http://localhost
+GOOGLE_REDIRECT: http://localhost:8000/auth/google/callback

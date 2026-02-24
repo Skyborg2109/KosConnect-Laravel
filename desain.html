@@ -1,0 +1,2842 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Penyewa Kos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Mock SDK for localStorage -->
+  <script>
+    window.dataSdk = {
+      init: async (handler) => {
+        window.dataHandler = handler;
+        // Load data from localStorage
+        const stored = localStorage.getItem('kosconnect_data');
+        const data = stored ? JSON.parse(stored) : [];
+        if (window.dataHandler) {
+          window.dataHandler.onDataChanged(data);
+        }
+        return { isOk: true };
+      },
+      create: async (item) => {
+        try {
+          const stored = localStorage.getItem('kosconnect_data');
+          const data = stored ? JSON.parse(stored) : [];
+          const newItem = { ...item, __backendId: Date.now().toString() + Math.random().toString(36).substr(2, 9) };
+          data.push(newItem);
+          localStorage.setItem('kosconnect_data', JSON.stringify(data));
+          if (window.dataHandler) {
+            window.dataHandler.onDataChanged(data);
+          }
+          return { isOk: true };
+        } catch (e) {
+          return { isOk: false };
+        }
+      },
+      update: async (item) => {
+        try {
+          const stored = localStorage.getItem('kosconnect_data');
+          const data = stored ? JSON.parse(stored) : [];
+          const index = data.findIndex(d => d.__backendId === item.__backendId);
+          if (index !== -1) {
+            data[index] = item;
+            localStorage.setItem('kosconnect_data', JSON.stringify(data));
+            if (window.dataHandler) {
+              window.dataHandler.onDataChanged(data);
+            }
+          }
+          return { isOk: true };
+        } catch (e) {
+          return { isOk: false };
+        }
+      },
+      delete: async (item) => {
+        try {
+          const stored = localStorage.getItem('kosconnect_data');
+          const data = stored ? JSON.parse(stored) : [];
+          const filtered = data.filter(d => d.__backendId !== item.__backendId);
+          localStorage.setItem('kosconnect_data', JSON.stringify(filtered));
+          if (window.dataHandler) {
+            window.dataHandler.onDataChanged(filtered);
+          }
+          return { isOk: true };
+        } catch (e) {
+          return { isOk: false };
+        }
+      }
+    };
+
+    window.elementSdk = {
+      init: async (config) => {
+        window.elementConfig = config;
+        // Load config from localStorage
+        const stored = localStorage.getItem('kosconnect_config');
+        const savedConfig = stored ? JSON.parse(stored) : {};
+        const mergedConfig = { ...config.defaultConfig, ...savedConfig };
+        if (config.onConfigChange) {
+          config.onConfigChange(mergedConfig);
+        }
+        return { isOk: true };
+      },
+      setConfig: async (newConfig) => {
+        const stored = localStorage.getItem('kosconnect_config');
+        const currentConfig = stored ? JSON.parse(stored) : {};
+        const updatedConfig = { ...currentConfig, ...newConfig };
+        localStorage.setItem('kosconnect_config', JSON.stringify(updatedConfig));
+        if (window.elementConfig && window.elementConfig.onConfigChange) {
+          window.elementConfig.onConfigChange(updatedConfig);
+        }
+        return { isOk: true };
+      }
+    };
+  </script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .filter-active {
+            background-color: #3B82F6;
+            color: white;
+        }
+        .star-rating {
+            color: #FCD34D;
+        }
+        .mobile-menu {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-menu.hidden {
+            transform: translateX(-100%);
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full bg-gray-50 font-sans"><!-- Navigation -->
+  <nav class="bg-white shadow-lg sticky top-0 z-40">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+     <div class="flex items-center">
+      <div class="flex-shrink-0 flex items-center">
+       <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+        <svg class="w-5 h-5 text-white" fill="currentColor" viewbox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+        </svg>
+       </div>
+       <h1 id="appTitle" class="text-xl font-bold text-gray-800">KosKu - Temukan Kos Impian</h1>
+      </div>
+     </div><!-- Desktop Navigation -->
+     <div class="hidden md:flex items-center space-x-8">
+      <div class="flex items-center space-x-1">
+       <button onclick="showSection('home')" class="nav-link text-blue-600 border-b-2 border-blue-600 px-1 pt-1 pb-4 text-sm font-medium"> Beranda </button> 
+       <button onclick="showSection('kos-list')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Daftar Kos </button> 
+       <button onclick="showSection('wishlist')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Wishlist </button> 
+       <button onclick="showSection('booking')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Booking </button> 
+       <button onclick="showSection('my-rental')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Sewa Saya </button> 
+       <button onclick="showSection('review')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Review </button> 
+       <button onclick="showSection('feedback')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Feedback </button> 
+       <button onclick="showSection('payments')" class="nav-link text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"> Pembayaran </button>
+      </div>
+      <div class="relative ml-4">
+       <button id="profileDropdownBtn" class="flex items-center space-x-2 focus:outline-none">
+        <div id="userAvatar" class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">P</div>
+        <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg></button>
+       <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+        <a href="#" onclick="showSection('profile'); closeDropdown();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil Saya</a> 
+        <a href="#" onclick="showSection('complaint'); closeDropdown();" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Submit Keluhan</a> 
+        <div class="border-t border-gray-100"></div>
+        <a href="#" onclick="logout(); closeDropdown();" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</a>
+       </div>
+      </div>
+     </div><!-- Mobile menu button -->
+     <div class="md:hidden flex items-center"><button id="mobileMenuBtn" class="text-gray-500 hover:text-gray-700">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+       </svg></button>
+     </div>
+    </div>
+   </div><!-- Mobile Navigation -->
+   <div id="mobileMenu" class="md:hidden mobile-menu hidden bg-white border-t border-gray-200">
+    <div class="px-2 pt-2 pb-3 space-y-1"><button onclick="showSection('home')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-blue-600 bg-blue-50 rounded-md w-full text-left"> Beranda </button> <button onclick="showSection('kos-list')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Daftar Kos </button> <button onclick="showSection('wishlist')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Wishlist </button> <button onclick="showSection('booking')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Booking </button> <button onclick="showSection('my-rental')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Sewa Saya </button> <button onclick="showSection('review')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Review </button> <button onclick="showSection('feedback')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Feedback </button> <button onclick="showSection('payments')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Pembayaran </button> <button onclick="showSection('profile')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Profil </button> <button onclick="showSection('complaint')" class="mobile-nav-link block px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md w-full text-left"> Submit Keluhan </button> <button onclick="logout()" class="block px-3 py-2 text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md w-full text-left"> Logout </button>
+    </div>
+   </div>
+  </nav><!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><!-- Home Section -->
+   <div id="homeSection" class="section"><!-- Welcome Banner -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 mb-8 text-white">
+     <div class="flex flex-col md:flex-row items-center justify-between">
+      <div class="mb-4 md:mb-0">
+       <h2 id="welcomeMessage" class="text-3xl font-bold mb-2">Selamat datang di dashboard penyewa</h2>
+       <p class="text-blue-100">Temukan kos impian Anda dengan mudah dan nyaman</p>
+      </div>
+      <div class="text-center">
+       <div class="bg-white bg-opacity-20 rounded-lg p-4">
+        <p class="text-sm text-blue-100">Kos Tersedia</p>
+        <p id="availableKosCount" class="text-2xl font-bold">0</p>
+       </div>
+      </div>
+     </div>
+    </div><!-- Main Search Bar -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
+     <div class="flex flex-col lg:flex-row gap-4">
+      <div class="flex-1">
+       <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+         <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+         </svg>
+        </div><input type="text" id="mainSearchInput" placeholder="Cari kos berdasarkan nama, lokasi, atau fasilitas..." class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+       </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3"><select id="mainPriceFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"> <option value="">Semua Harga</option> <option value="0-500000">&lt; Rp 500.000</option> <option value="500000-1000000">Rp 500.000 - 1.000.000</option> <option value="1000000-2000000">Rp 1.000.000 - 2.000.000</option> <option value="2000000+"> &gt; Rp 2.000.000</option> </select> <button onclick="performMainSearch()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center min-w-[120px]">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg> Cari Kos </button>
+      </div>
+     </div><!-- Quick Filter Tags -->
+     <div class="mt-4 flex flex-wrap gap-2"><span class="text-sm text-gray-600 mr-2">Filter Cepat:</span> <button onclick="quickFilter('WiFi')" class="quick-filter-tag px-3 py-1 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full text-sm transition-colors"> 📶 WiFi </button> <button onclick="quickFilter('AC')" class="quick-filter-tag px-3 py-1 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full text-sm transition-colors"> ❄️ AC </button> <button onclick="quickFilter('Kamar Mandi Dalam')" class="quick-filter-tag px-3 py-1 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full text-sm transition-colors"> 🚿 Kamar Mandi Dalam </button> <button onclick="quickFilter('Parkir')" class="quick-filter-tag px-3 py-1 bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 rounded-full text-sm transition-colors"> 🅿️ Parkir </button> <button onclick="clearAllFilters()" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-full text-sm transition-colors"> ✖️ Hapus Filter </button>
+     </div>
+    </div><!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <div class="flex items-center">
+       <div class="p-3 rounded-full bg-green-100 text-green-600">
+        <svg class="w-6 h-6" fill="currentColor" viewbox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+       </div>
+       <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600">Kos Aktif</p>
+        <p id="activeRentals" class="text-2xl font-bold text-gray-900">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <div class="flex items-center">
+       <div class="p-3 rounded-full bg-red-100 text-red-600">
+        <svg class="w-6 h-6" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+        </svg>
+       </div>
+       <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600">Wishlist</p>
+        <p id="wishlistCount" class="text-2xl font-bold text-gray-900">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <div class="flex items-center">
+       <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+        <svg class="w-6 h-6" fill="currentColor" viewbox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+       </div>
+       <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600">Booking Aktif</p>
+        <p id="activeBookings" class="text-2xl font-bold text-gray-900">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <div class="flex items-center">
+       <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+        <svg class="w-6 h-6" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+        </svg>
+       </div>
+       <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600">Pembayaran Pending</p>
+        <p id="pendingPayments" class="text-2xl font-bold text-gray-900">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <div class="flex items-center">
+       <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+        <svg class="w-6 h-6" fill="currentColor" viewbox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path> <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+        </svg>
+       </div>
+       <div class="ml-4">
+        <p class="text-sm font-medium text-gray-600">Pesan Baru</p>
+        <p id="newMessages" class="text-2xl font-bold text-gray-900">0</p>
+       </div>
+      </div>
+     </div>
+    </div><!-- Recommended Kos -->
+    <div class="mb-8">
+     <div class="flex justify-between items-center mb-6">
+      <h3 class="text-2xl font-bold text-gray-800">Rekomendasi Kos</h3><button onclick="showSection('kos-list')" class="text-blue-600 hover:text-blue-700 font-medium"> Lihat Semua → </button>
+     </div>
+     <div id="recommendedKos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="text-center py-12 col-span-full">
+       <p class="text-gray-500">Belum ada rekomendasi kos tersedia</p>
+      </div>
+     </div>
+    </div><!-- Recent Activity -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+     <div class="p-6 border-b border-gray-200">
+      <h4 class="text-lg font-semibold text-gray-800">Aktivitas Terbaru</h4>
+     </div>
+     <div class="p-6">
+      <div id="recentActivity" class="space-y-4">
+       <p class="text-gray-500 text-center py-8">Belum ada aktivitas terbaru</p>
+      </div>
+     </div>
+    </div>
+   </div><!-- Kos List Section -->
+   <div id="kosListSection" class="section hidden">
+    <div class="flex flex-col lg:flex-row gap-8"><!-- Filters Sidebar -->
+     <div class="lg:w-1/4">
+      <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200 sticky top-24">
+       <h3 class="text-lg font-semibold text-gray-800 mb-4">Filter Pencarian</h3><!-- Price Range -->
+       <div class="mb-6"><label class="block text-sm font-medium text-gray-700 mb-2">Rentang Harga</label>
+        <div class="space-y-2"><button onclick="filterByPrice('all')" class="filter-btn w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 filter-active"> Semua Harga </button> <button onclick="filterByPrice('0-500000')" class="filter-btn w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"> &lt; Rp 500.000 </button> <button onclick="filterByPrice('500000-1000000')" class="filter-btn w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"> Rp 500.000 - 1.000.000 </button> <button onclick="filterByPrice('1000000-2000000')" class="filter-btn w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"> Rp 1.000.000 - 2.000.000 </button> <button onclick="filterByPrice('2000000+')" class="filter-btn w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50"> &gt; Rp 2.000.000 </button>
+        </div>
+       </div><!-- Facilities -->
+       <div class="mb-6"><label class="block text-sm font-medium text-gray-700 mb-2">Fasilitas</label>
+        <div class="space-y-2"><label class="flex items-center"> <input type="checkbox" class="facility-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="WiFi"> <span class="ml-2 text-sm text-gray-700">WiFi</span> </label> <label class="flex items-center"> <input type="checkbox" class="facility-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="AC"> <span class="ml-2 text-sm text-gray-700">AC</span> </label> <label class="flex items-center"> <input type="checkbox" class="facility-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="Kamar Mandi Dalam"> <span class="ml-2 text-sm text-gray-700">Kamar Mandi Dalam</span> </label> <label class="flex items-center"> <input type="checkbox" class="facility-filter rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="Parkir"> <span class="ml-2 text-sm text-gray-700">Parkir</span> </label>
+        </div>
+       </div><!-- Search -->
+       <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-2">Cari Lokasi</label> <input type="text" id="locationSearch" placeholder="Masukkan nama kota..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+       </div><button onclick="applyFilters()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Terapkan Filter </button>
+      </div>
+     </div><!-- Kos Grid -->
+     <div class="lg:w-3/4">
+      <div class="flex justify-between items-center mb-6">
+       <h3 class="text-2xl font-bold text-gray-800">Daftar Kos Tersedia</h3>
+       <div class="flex items-center space-x-4"><span class="text-sm text-gray-600">Urutkan:</span> <select id="sortBy" onchange="sortKos()" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <option value="newest">Terbaru</option> <option value="price-low">Harga Terendah</option> <option value="price-high">Harga Tertinggi</option> <option value="rating">Rating Tertinggi</option> </select>
+       </div>
+      </div>
+      <div id="kosGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <div class="text-center py-12 col-span-full">
+        <p class="text-gray-500">Belum ada data kos tersedia</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div><!-- Wishlist Section -->
+   <div id="wishlistSection" class="section hidden">
+    <div class="flex justify-between items-center mb-6">
+     <h3 class="text-2xl font-bold text-gray-800">Wishlist Saya</h3><button onclick="clearWishlist()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"> Hapus Semua </button>
+    </div>
+    <div id="wishlistGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+     <div class="text-center py-12 col-span-full">
+      <div class="text-gray-400 mb-4">
+       <svg class="w-16 h-16 mx-auto" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+       </svg>
+      </div>
+      <p class="text-gray-500">Belum ada kos di wishlist</p>
+      <p class="text-sm text-gray-400 mt-2">Klik ikon ❤️ pada kos untuk menambahkan ke wishlist</p>
+     </div>
+    </div>
+   </div><!-- Booking Section -->
+   <div id="bookingSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Booking Kos/Kamar</h3><!-- Booking Tabs -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+     <div class="border-b border-gray-200">
+      <nav class="flex space-x-8 px-6"><button onclick="showBookingTab('active')" class="booking-tab-btn py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600"> Booking Aktif </button> <button onclick="showBookingTab('pending')" class="booking-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700"> Menunggu Konfirmasi </button> <button onclick="showBookingTab('history')" class="booking-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700"> Riwayat Booking </button>
+      </nav>
+     </div><!-- Active Bookings Tab -->
+     <div id="activeBookingTab" class="booking-tab-content p-6">
+      <div id="activeBookingsList" class="space-y-4">
+       <div class="text-center py-12">
+        <div class="text-gray-400 mb-4">
+         <svg class="w-16 h-16 mx-auto" fill="currentColor" viewbox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+         </svg>
+        </div>
+        <p class="text-gray-500">Belum ada booking aktif</p>
+        <p class="text-sm text-gray-400 mt-2">Booking yang sudah dikonfirmasi akan muncul di sini</p>
+       </div>
+      </div>
+     </div><!-- Pending Bookings Tab -->
+     <div id="pendingBookingTab" class="booking-tab-content p-6 hidden">
+      <div id="pendingBookingsList" class="space-y-4">
+       <div class="text-center py-12">
+        <div class="text-gray-400 mb-4">
+         <svg class="w-16 h-16 mx-auto" fill="currentColor" viewbox="0 0 20 20"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+         </svg>
+        </div>
+        <p class="text-gray-500">Belum ada booking menunggu konfirmasi</p>
+        <p class="text-sm text-gray-400 mt-2">Booking yang menunggu persetujuan pemilik akan muncul di sini</p>
+       </div>
+      </div>
+     </div><!-- Booking History Tab -->
+     <div id="historyBookingTab" class="booking-tab-content p-6 hidden">
+      <div id="historyBookingsList" class="space-y-4">
+       <div class="text-center py-12">
+        <div class="text-gray-400 mb-4">
+         <svg class="w-16 h-16 mx-auto" fill="currentColor" viewbox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path> <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+         </svg>
+        </div>
+        <p class="text-gray-500">Belum ada riwayat booking</p>
+        <p class="text-sm text-gray-400 mt-2">Riwayat booking yang sudah selesai akan muncul di sini</p>
+       </div>
+      </div>
+     </div>
+    </div><!-- Quick Booking Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+     <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+       <div>
+        <h4 class="text-lg font-semibold mb-2">Booking Baru</h4>
+        <p class="text-blue-100 text-sm mb-4">Cari dan booking kos impian Anda</p><button onclick="showSection('kos-list')" class="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"> Cari Kos </button>
+       </div>
+       <svg class="w-12 h-12 text-blue-200" fill="currentColor" viewbox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+       </svg>
+      </div>
+     </div>
+     <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+       <div>
+        <h4 class="text-lg font-semibold mb-2">Pembayaran</h4>
+        <p class="text-green-100 text-sm mb-4">Kelola pembayaran booking Anda</p><button onclick="showSection('payments')" class="bg-white text-green-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors"> Lihat Pembayaran </button>
+       </div>
+       <svg class="w-12 h-12 text-green-200" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+       </svg>
+      </div>
+     </div>
+     <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+       <div>
+        <h4 class="text-lg font-semibold mb-2">Bantuan</h4>
+        <p class="text-purple-100 text-sm mb-4">Butuh bantuan dengan booking?</p><button onclick="showHelpModal()" class="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors"> Hubungi CS </button>
+       </div>
+       <svg class="w-12 h-12 text-purple-200" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+       </svg>
+      </div>
+     </div>
+    </div>
+   </div><!-- My Rental Section -->
+   <div id="myRentalSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Status Sewa Saya</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Active Rentals -->
+     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+       <h4 class="text-lg font-semibold text-gray-800">Sewa Aktif</h4>
+      </div>
+      <div class="p-6">
+       <div id="activeRentalsList" class="space-y-4">
+        <p class="text-gray-500 text-center py-8">Belum ada sewa aktif</p>
+       </div>
+      </div>
+     </div><!-- Rental History -->
+     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+       <h4 class="text-lg font-semibold text-gray-800">Riwayat Sewa</h4>
+      </div>
+      <div class="p-6">
+       <div id="rentalHistory" class="space-y-4">
+        <p class="text-gray-500 text-center py-8">Belum ada riwayat sewa</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div><!-- Payments Section -->
+   <div id="paymentsSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Riwayat Pembayaran</h3>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+     <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+       <thead class="bg-gray-50">
+        <tr>
+         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kos</th>
+         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+        </tr>
+       </thead>
+       <tbody id="paymentsTableBody" class="bg-white divide-y divide-gray-200">
+        <tr>
+         <td colspan="5" class="px-6 py-8 text-center text-gray-500">Belum ada riwayat pembayaran</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </div><!-- Profile Section -->
+   <div id="profileSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Pengaturan Profil</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Profile Info -->
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <h4 class="text-lg font-semibold text-gray-800 mb-4">Informasi Profil</h4>
+      <form onsubmit="updateProfile(event)">
+       <div class="space-y-4">
+        <div><label for="profileName" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label> <input type="text" id="profileName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nama lengkap">
+        </div>
+        <div><label for="profileEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label> <input type="email" id="profileEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="email@example.com">
+        </div>
+        <div><label for="profilePhone" class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label> <input type="tel" id="profilePhone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="08xxxxxxxxxx">
+        </div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Simpan Profil </button>
+       </div>
+      </form>
+     </div><!-- Change Password -->
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <h4 class="text-lg font-semibold text-gray-800 mb-4">Ubah Password</h4>
+      <form onsubmit="changePassword(event)">
+       <div class="space-y-4">
+        <div><label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">Password Lama</label> <input type="password" id="currentPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div><label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label> <input type="password" id="newPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div><label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label> <input type="password" id="confirmPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div><button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Ubah Password </button>
+       </div>
+      </form>
+     </div>
+    </div>
+   </div><!-- Review Section -->
+   <div id="reviewSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Review & Rating Kos</h3>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+     <div class="border-b border-gray-200">
+      <nav class="flex space-x-8 px-6"><button onclick="showReviewTab('myReviews')" class="review-tab-btn py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600"> Review Saya </button> <button onclick="showReviewTab('writeReview')" class="review-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700"> Tulis Review </button>
+      </nav>
+     </div><!-- My Reviews Tab -->
+     <div id="myReviewsTab" class="review-tab-content p-6">
+      <div id="myReviewsList" class="space-y-4">
+       <div class="text-center py-12">
+        <p class="text-gray-500">Anda belum menulis review apapun.</p>
+       </div>
+      </div>
+     </div><!-- Write Review Tab -->
+     <div id="writeReviewTab" class="review-tab-content p-6 hidden">
+      <form onsubmit="submitReview(event)">
+       <div class="space-y-6">
+        <div><label for="reviewKosSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kos yang Pernah Disewa</label> <select id="reviewKosSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <option value="">-- Pilih Kos --</option> </select>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-2">Rating Keseluruhan</label>
+         <div class="flex space-x-1 star-rating-input" data-rating-for="overall">
+          <svg class="w-8 h-8 text-gray-300 cursor-pointer" fill="currentColor" viewbox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg> <svg class="w-8 h-8 text-gray-300 cursor-pointer" fill="currentColor" viewbox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg> <svg class="w-8 h-8 text-gray-300 cursor-pointer" fill="currentColor" viewbox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg> <svg class="w-8 h-8 text-gray-300 cursor-pointer" fill="currentColor" viewbox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg> <svg class="w-8 h-8 text-gray-300 cursor-pointer" fill="currentColor" viewbox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg>
+         </div><input type="hidden" id="rating-overall" name="rating-overall" value="0">
+        </div>
+        <div><label for="reviewTitle" class="block text-sm font-medium text-gray-700 mb-1">Judul Review</label> <input type="text" id="reviewTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Kos yang nyaman dan strategis">
+        </div>
+        <div><label for="reviewDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Review</label> <textarea id="reviewDescription" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ceritakan pengalaman Anda secara detail..."></textarea>
+        </div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Kirim Review </button>
+       </div>
+      </form>
+     </div>
+    </div>
+   </div><!-- Feedback Section -->
+   <div id="feedbackSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Feedback Aplikasi</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Feedback Form -->
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <h4 class="text-lg font-semibold text-gray-800 mb-4">Kirim Feedback</h4>
+      <form onsubmit="submitFeedback(event)">
+       <div class="space-y-4">
+        <div><label for="feedbackCategory" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label> <select id="feedbackCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <option value="">Pilih Kategori</option> <option>Saran Perbaikan</option> <option>Laporan Bug</option> <option>Permintaan Fitur</option> <option>Pujian</option> <option>Lainnya</option> </select>
+        </div>
+        <div><label for="feedbackMessage" class="block text-sm font-medium text-gray-700 mb-1">Pesan</label> <textarea id="feedbackMessage" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Tulis pesan Anda..."></textarea>
+        </div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Kirim Feedback </button>
+       </div>
+      </form>
+     </div><!-- Feedback History -->
+     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+       <h4 class="text-lg font-semibold text-gray-800">Riwayat Feedback</h4>
+      </div>
+      <div class="p-6">
+       <div id="feedbackHistory" class="space-y-4">
+        <p class="text-gray-500 text-center py-8">Belum ada riwayat feedback.</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div><!-- Complaint Section -->
+   <div id="complaintSection" class="section hidden">
+    <h3 class="text-2xl font-bold text-gray-800 mb-6">Submit Keluhan</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Complaint Form -->
+     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <h4 class="text-lg font-semibold text-gray-800 mb-4">Form Keluhan</h4>
+      <form onsubmit="submitComplaint(event)">
+       <div class="space-y-4">
+        <div><label for="complaintCategory" class="block text-sm font-medium text-gray-700 mb-1">Kategori Keluhan</label> <select id="complaintCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <option value="">Pilih Kategori</option> <option>Kondisi Kos</option> <option>Fasilitas Tidak Sesuai</option> <option>Perilaku Pemilik Kos</option> <option>Masalah Pembayaran</option> <option>Masalah Teknis Aplikasi</option> <option>Layanan Customer Service</option> </select>
+        </div>
+        <div><label for="complaintPriority" class="block text-sm font-medium text-gray-700 mb-1">Tingkat Prioritas</label> <select id="complaintPriority" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <option value="Rendah">Rendah</option> <option value="Sedang">Sedang</option> <option value="Tinggi">Tinggi</option> <option value="Darurat">Darurat</option> </select>
+        </div>
+        <div><label for="complaintDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Keluhan</label> <textarea id="complaintDescription" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Jelaskan keluhan Anda secara detail..."></textarea>
+        </div>
+        <div>
+         <label class="block text-sm font-medium text-gray-700 mb-1">Upload Bukti (Opsional)</label>
+         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <div class="space-y-1 text-center">
+           <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewbox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+           </svg>
+           <div class="flex text-sm text-gray-600">
+            <label for="complaintProof" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"> <span>Upload file</span> <input id="complaintProof" name="complaintProof" type="file" class="sr-only"> </label>
+            <p class="pl-1">atau drag and drop</p>
+           </div>
+           <p class="text-xs text-gray-500">PNG, JPG, PDF hingga 5MB</p>
+          </div>
+         </div>
+        </div><button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Kirim Keluhan </button>
+       </div>
+      </form>
+     </div><!-- Complaint History -->
+     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+       <h4 class="text-lg font-semibold text-gray-800">Riwayat Keluhan</h4>
+      </div>
+      <div class="p-6">
+       <div id="complaintHistory" class="space-y-4">
+        <p class="text-gray-500 text-center py-8">Belum ada riwayat keluhan.</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </main><!-- Modals --> <!-- Kos Detail Modal -->
+  <div id="kosDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90%] overflow-y-auto">
+    <div class="p-6">
+     <div class="flex justify-between items-center mb-4">
+      <h3 id="modalKosName" class="text-xl font-bold text-gray-800"></h3><button onclick="closeModal('kosDetailModal')" class="text-gray-400 hover:text-gray-600">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+       </svg></button>
+     </div>
+     <div id="modalKosContent" class="space-y-4"><!-- Content will be populated by JavaScript -->
+     </div>
+     <div class="flex space-x-3 pt-6 border-t border-gray-200"><button onclick="contactOwner()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Hubungi Pemilik </button> <button onclick="rentKos()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Sewa Sekarang </button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Contact Owner Modal -->
+  <div id="contactModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-md w-full">
+    <div class="p-6">
+     <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold text-gray-800">Hubungi Pemilik</h3><button onclick="closeModal('contactModal')" class="text-gray-400 hover:text-gray-600">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+       </svg></button>
+     </div>
+     <form onsubmit="sendMessage(event)">
+      <div class="space-y-4">
+       <div><label for="messageText" class="block text-sm font-medium text-gray-700 mb-1">Pesan</label> <textarea id="messageText" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Tulis pesan Anda..."></textarea>
+       </div>
+       <div class="flex space-x-3"><button type="button" onclick="closeModal('contactModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"> Batal </button> <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Kirim Pesan </button>
+       </div>
+      </div>
+     </form>
+    </div>
+   </div>
+  </div><!-- Rent Confirmation Modal -->
+  <div id="rentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-md w-full">
+    <div class="p-6">
+     <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold text-gray-800">Konfirmasi Sewa</h3><button onclick="closeModal('rentModal')" class="text-gray-400 hover:text-gray-600">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+       </svg></button>
+     </div>
+     <form onsubmit="confirmRent(event)">
+      <div class="space-y-4">
+       <div><label for="rentStartDate" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai</label> <input type="date" id="rentStartDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+       </div>
+       <div><label for="rentDuration" class="block text-sm font-medium text-gray-700 mb-1">Durasi (bulan)</label> <select id="rentDuration" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"> <option value="">Pilih durasi</option> <option value="1">1 Bulan</option> <option value="3">3 Bulan</option> <option value="6">6 Bulan</option> <option value="12">12 Bulan</option> </select>
+       </div>
+       <div class="bg-gray-50 p-4 rounded-lg">
+        <div class="flex justify-between items-center"><span class="font-medium">Total Biaya:</span> <span id="totalCost" class="text-xl font-bold text-blue-600">Rp 0</span>
+        </div>
+       </div>
+       <div class="flex space-x-3"><button type="button" onclick="closeModal('rentModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"> Batal </button> <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Konfirmasi Sewa </button>
+       </div>
+      </div>
+     </form>
+    </div>
+   </div>
+  </div><!-- Booking Payment Modal -->
+  <div id="bookingPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90%] overflow-y-auto">
+    <div class="p-6">
+     <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold text-gray-800">Pembayaran Booking</h3><button onclick="closeModal('bookingPaymentModal')" class="text-gray-400 hover:text-gray-600">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+       </svg></button>
+     </div><!-- Booking Summary -->
+     <div class="bg-gray-50 rounded-lg p-4 mb-6">
+      <h4 class="font-semibold text-gray-800 mb-3">Ringkasan Booking</h4>
+      <div id="bookingSummary" class="space-y-2 text-sm"><!-- Content will be populated by JavaScript -->
+      </div>
+     </div><!-- Payment Method Selection -->
+     <div class="mb-6">
+      <h4 class="font-semibold text-gray-800 mb-4">Pilih Metode Pembayaran</h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><label class="payment-method cursor-pointer"> <input type="radio" name="paymentMethod" value="bank_transfer" class="sr-only">
+        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+         <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+           </svg>
+          </div>
+          <div>
+           <p class="font-medium text-gray-800">Transfer Bank</p>
+           <p class="text-sm text-gray-500">BCA, Mandiri, BNI, BRI</p>
+          </div>
+         </div>
+        </div></label> <label class="payment-method cursor-pointer"> <input type="radio" name="paymentMethod" value="e_wallet" class="sr-only">
+        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+         <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-green-600" fill="currentColor" viewbox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+           </svg>
+          </div>
+          <div>
+           <p class="font-medium text-gray-800">E-Wallet</p>
+           <p class="text-sm text-gray-500">GoPay, OVO, DANA, LinkAja</p>
+          </div>
+         </div>
+        </div></label> <label class="payment-method cursor-pointer"> <input type="radio" name="paymentMethod" value="virtual_account" class="sr-only">
+        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+         <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewbox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path> <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+           </svg>
+          </div>
+          <div>
+           <p class="font-medium text-gray-800">Virtual Account</p>
+           <p class="text-sm text-gray-500">Bayar melalui ATM/Mobile Banking</p>
+          </div>
+         </div>
+        </div></label> <label class="payment-method cursor-pointer"> <input type="radio" name="paymentMethod" value="credit_card" class="sr-only">
+        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+         <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+           <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewbox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path> <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+           </svg>
+          </div>
+          <div>
+           <p class="font-medium text-gray-800">Kartu Kredit</p>
+           <p class="text-sm text-gray-500">Visa, Mastercard, JCB</p>
+          </div>
+         </div>
+        </div></label>
+      </div>
+     </div><!-- Payment Details -->
+     <div id="paymentDetails" class="mb-6 hidden">
+      <h4 class="font-semibold text-gray-800 mb-4">Detail Pembayaran</h4>
+      <div id="paymentInstructions" class="bg-blue-50 border border-blue-200 rounded-lg p-4"><!-- Payment instructions will be populated by JavaScript -->
+      </div>
+     </div><!-- Upload Payment Proof -->
+     <div class="mb-6">
+      <h4 class="font-semibold text-gray-800 mb-4">Upload Bukti Pembayaran</h4>
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+       <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+       </svg>
+       <p class="text-gray-600 mb-2">Klik untuk upload atau drag &amp; drop</p>
+       <p class="text-sm text-gray-500">PNG, JPG, PDF (Max. 5MB)</p><input type="file" id="paymentProof" accept="image/*,.pdf" class="hidden"> <button onclick="document.getElementById('paymentProof').click()" class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"> Pilih File </button>
+      </div>
+      <div id="uploadedFile" class="mt-3 hidden">
+       <div class="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+        </svg><span id="fileName" class="text-sm text-green-800"></span>
+       </div>
+      </div>
+     </div><!-- Action Buttons -->
+     <div class="flex space-x-3"><button onclick="closeModal('bookingPaymentModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors"> Batal </button> <button onclick="submitPayment()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"> Konfirmasi Pembayaran </button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Payment Verification Modal -->
+  <div id="paymentVerificationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-md w-full">
+    <div class="p-6">
+     <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+       <svg class="w-8 h-8 text-green-600" fill="currentColor" viewbox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+       </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-800 mb-2">Pembayaran Berhasil Dikirim!</h3>
+      <p class="text-gray-600">Bukti pembayaran Anda sedang diverifikasi oleh tim kami. Anda akan mendapat notifikasi dalam 1x24 jam.</p>
+     </div>
+     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <h4 class="font-semibold text-blue-800 mb-2">Langkah Selanjutnya:</h4>
+      <ul class="text-sm text-blue-700 space-y-1">
+       <li>• Tim akan memverifikasi pembayaran Anda</li>
+       <li>• Booking akan dikonfirmasi setelah verifikasi</li>
+       <li>• Anda akan mendapat email konfirmasi</li>
+       <li>• Hubungi CS jika ada pertanyaan</li>
+      </ul>
+     </div>
+     <div class="flex space-x-3"><button onclick="closeModal('paymentVerificationModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"> Tutup </button> <button onclick="showSection('booking'); closeModal('paymentVerificationModal')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Lihat Booking </button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Help Modal -->
+  <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-md w-full">
+    <div class="p-6">
+     <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold text-gray-800">Bantuan Customer Service</h3><button onclick="closeModal('helpModal')" class="text-gray-400 hover:text-gray-600">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+       </svg></button>
+     </div>
+     <div class="space-y-4">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+       <h4 class="font-semibold text-blue-800 mb-2">📞 Telepon</h4>
+       <p class="text-blue-700">0800-1234-5678</p>
+       <p class="text-sm text-blue-600">Senin - Minggu, 08:00 - 22:00</p>
+      </div>
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+       <h4 class="font-semibold text-green-800 mb-2">💬 WhatsApp</h4>
+       <p class="text-green-700">+62 812-3456-7890</p>
+       <p class="text-sm text-green-600">Respon cepat 24/7</p>
+      </div>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+       <h4 class="font-semibold text-purple-800 mb-2">📧 Email</h4>
+       <p class="text-purple-700">support@kosku.com</p>
+       <p class="text-sm text-purple-600">Respon dalam 2-4 jam</p>
+      </div>
+     </div><button onclick="closeModal('helpModal')" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Tutup </button>
+    </div>
+   </div>
+  </div><!-- Confirmation Modal -->
+  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+   <div class="bg-white rounded-lg max-w-md w-full">
+    <div class="p-6">
+     <div class="flex items-center mb-4">
+      <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+       </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-800">Konfirmasi</h3>
+     </div>
+     <p id="confirmMessage" class="text-gray-600 mb-6"></p>
+     <div class="flex space-x-3"><button onclick="closeModal('confirmModal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"> Batal </button> <button id="confirmButton" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"> Ya, Hapus </button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+   <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div><span class="text-gray-700">Memproses...</span>
+   </div>
+  </div>
+  <script>
+        // Global variables
+        let allData = [];
+        let filteredKos = []; // for home page search
+        let kosListFiltered = []; // for kos list page
+        let currentRecordCount = 0;
+        let selectedKos = null;
+        let currentFilters = {
+            price: 'all',
+            facilities: [],
+            location: '',
+            search: ''
+        };
+        let activeQuickFilters = [];
+
+        // Default configuration
+        const defaultConfig = {
+            tenant_name: "Penyewa",
+            welcome_message: "Selamat datang di dashboard penyewa",
+            app_title: "KosKu - Temukan Kos Impian"
+        };
+
+        // Data handler for SDK
+        const dataHandler = {
+            onDataChanged(data) {
+                allData = data;
+                currentRecordCount = data.length;
+                updateDashboard();
+                updateAllSections();
+            }
+        };
+
+        // Initialize SDK and app
+        async function initializeApp() {
+            if (window.dataSdk) {
+                const result = await window.dataSdk.init(dataHandler);
+                if (!result.isOk) {
+                    console.error("Failed to initialize data SDK");
+                }
+            }
+
+            if (window.elementSdk) {
+                await window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange: async (config) => {
+                        const tenantName = config.tenant_name || defaultConfig.tenant_name;
+                        const welcomeMessage = config.welcome_message || defaultConfig.welcome_message;
+                        const appTitle = config.app_title || defaultConfig.app_title;
+
+                        document.getElementById('welcomeMessage').textContent = welcomeMessage;
+                        document.getElementById('userAvatar').textContent = (tenantName.charAt(0) || 'P').toUpperCase();
+                        document.getElementById('appTitle').textContent = appTitle;
+                        document.getElementById('profileName').value = tenantName;
+                    },
+                    mapToCapabilities: (config) => ({
+                        recolorables: [],
+                        borderables: [],
+                        fontEditable: undefined,
+                        fontSizeable: undefined
+                    }),
+                    mapToEditPanelValues: (config) => new Map([
+                        ["tenant_name", config.tenant_name || defaultConfig.tenant_name],
+                        ["welcome_message", config.welcome_message || defaultConfig.welcome_message],
+                        ["app_title", config.app_title || defaultConfig.app_title]
+                    ])
+                });
+            }
+
+            setupEventListeners();
+            // Seed data only if there is no data
+            if (allData.length === 0) {
+                await seedSampleData();
+            } else {
+                updateAllSections();
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Mobile menu toggle
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                const mobileMenu = document.getElementById('mobileMenu');
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Profile dropdown toggle
+            const profileBtn = document.getElementById('profileDropdownBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            profileBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                profileDropdown.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (event) => {
+                if (!profileBtn.contains(event.target)) {
+                    profileDropdown.classList.add('hidden');
+                }
+            });
+
+            // Facility filter change
+            document.querySelectorAll('.facility-filter').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    currentFilters.facilities = Array.from(document.querySelectorAll('.facility-filter:checked')).map(cb => cb.value);
+                });
+            });
+
+            // Location search
+            document.getElementById('locationSearch').addEventListener('input', (e) => {
+                currentFilters.location = e.target.value;
+            });
+
+            // Main search input - search as you type
+            document.getElementById('mainSearchInput').addEventListener('input', (e) => {
+                currentFilters.search = e.target.value;
+                if (e.target.value.length >= 2 || e.target.value.length === 0) {
+                    performMainSearch();
+                }
+            });
+
+            // Main search input - enter key
+            document.getElementById('mainSearchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performMainSearch();
+                }
+            });
+
+            // Main price filter change
+            document.getElementById('mainPriceFilter').addEventListener('change', (e) => {
+                currentFilters.price = e.target.value || 'all';
+                performMainSearch();
+            });
+
+            // Rent duration change
+            document.getElementById('rentDuration').addEventListener('change', calculateTotalCost);
+
+            // Star rating input
+            document.querySelectorAll('.star-rating-input').forEach(starContainer => {
+                const stars = starContainer.querySelectorAll('svg');
+                const ratingInput = document.getElementById(`rating-${starContainer.dataset.ratingFor}`);
+                stars.forEach((star, index) => {
+                    star.addEventListener('click', () => {
+                        const rating = index + 1;
+                        ratingInput.value = rating;
+                        stars.forEach((s, i) => {
+                            s.classList.toggle('text-yellow-400', i < rating);
+                            s.classList.toggle('text-gray-300', i >= rating);
+                        });
+                    });
+                });
+            });
+        }
+
+        // Seed sample data
+        async function seedSampleData() {
+            if (allData.length === 0) {
+                const sampleKos = [
+                    {
+                        type: 'kos',
+                        name: 'Kos Melati Indah',
+                        address: 'Jl. Melati No. 15, Yogyakarta',
+                        price: 800000,
+                        rooms: 20,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Sari',
+                        status: 'tersedia',
+                        description: 'Kos nyaman dengan fasilitas lengkap di pusat kota Yogyakarta. Dekat dengan kampus dan pusat perbelanjaan.',
+                        rating: 4.5,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Mawar Residence',
+                        address: 'Jl. Mawar Raya No. 8, Jakarta Selatan',
+                        price: 1200000,
+                        rooms: 15,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry',
+                        owner: 'Pak Budi',
+                        status: 'tersedia',
+                        description: 'Kos eksklusif dengan desain modern dan fasilitas premium. Lokasi strategis dekat stasiun MRT.',
+                        rating: 4.8,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Anggrek Putih',
+                        address: 'Jl. Anggrek No. 22, Bandung',
+                        price: 600000,
+                        rooms: 25,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Rina',
+                        status: 'tersedia',
+                        description: 'Kos sederhana dengan harga terjangkau. Lingkungan aman dan nyaman untuk mahasiswa.',
+                        rating: 4.2,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Sakura Garden',
+                        address: 'Jl. Sakura No. 10, Surabaya',
+                        price: 750000,
+                        rooms: 18,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Pak Ahmad',
+                        status: 'tersedia',
+                        description: 'Kos dengan taman indah dan fasilitas lengkap. Cocok untuk mahasiswa dan pekerja.',
+                        rating: 4.6,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Teratai Exclusive',
+                        address: 'Jl. Teratai Raya No. 5, Bali',
+                        price: 1500000,
+                        rooms: 12,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Kolam Renang',
+                        owner: 'Bu Maya',
+                        status: 'tersedia',
+                        description: 'Kos premium dengan kolam renang dan pemandangan laut. Fasilitas mewah untuk kenyamanan maksimal.',
+                        rating: 4.9,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Kenanga Asri',
+                        address: 'Jl. Kenanga No. 25, Semarang',
+                        price: 550000,
+                        rooms: 30,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Parkir',
+                        owner: 'Pak Joko',
+                        status: 'tersedia',
+                        description: 'Kos ekonomis dengan harga terjangkau. Lingkungan asri dan aman untuk mahasiswa.',
+                        rating: 4.0,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Cempaka Biru',
+                        address: 'Jl. Cempaka No. 3, Malang',
+                        price: 950000,
+                        rooms: 16,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Dapur Bersama',
+                        owner: 'Pak Heru',
+                        status: 'tersedia',
+                        description: 'Kos modern di pusat kota Malang, dekat dengan universitas ternama. Suasana tenang dan bersih.',
+                        rating: 4.7,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Flamboyan Residence',
+                        address: 'Jl. Flamboyan No. 1, Depok',
+                        price: 1100000,
+                        rooms: 10,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir Mobil',
+                        owner: 'Bu Sinta',
+                        status: 'tersedia',
+                        description: 'Kos eksklusif dengan keamanan 24 jam. Akses mudah ke stasiun kereta dan jalan tol.',
+                        rating: 4.6,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Dahlia Nyaman',
+                        address: 'Jl. Dahlia Indah No. 7, Medan',
+                        price: 450000,
+                        rooms: 22,
+                        facilities: 'WiFi, Kipas Angin, Parkir Motor',
+                        owner: 'Pak Rahmat',
+                        status: 'tersedia',
+                        description: 'Pilihan kos paling ekonomis di Medan. Cocok untuk mahasiswa dengan budget terbatas.',
+                        rating: 3.9,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Bougenville Asri',
+                        address: 'Jl. Bougenville No. 12, Makassar',
+                        price: 700000,
+                        rooms: 20,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry',
+                        owner: 'Bu Siti',
+                        status: 'tersedia',
+                        description: 'Kos nyaman di pusat kota Makassar dengan fasilitas lengkap dan lingkungan aman.',
+                        rating: 4.3,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Edelweis Residence',
+                        address: 'Jl. Edelweis Raya No. 8, Palembang',
+                        price: 650000,
+                        rooms: 18,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir',
+                        owner: 'Pak Hendro',
+                        status: 'tersedia',
+                        description: 'Kos modern dengan desain minimalis di Palembang. Dekat dengan universitas dan pusat perbelanjaan.',
+                        rating: 4.4,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Lavender Garden',
+                        address: 'Jl. Lavender No. 15, Pontianak',
+                        price: 550000,
+                        rooms: 25,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Bu Maya',
+                        status: 'tersedia',
+                        description: 'Kos dengan taman kecil yang asri di Pontianak. Cocok untuk mahasiswa yang mencari suasana tenang.',
+                        rating: 4.1,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Tulip Exclusive',
+                        address: 'Jl. Tulip No. 9, Jakarta Pusat',
+                        price: 1300000,
+                        rooms: 14,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Gym',
+                        owner: 'Pak Dedi',
+                        status: 'tersedia',
+                        description: 'Kos premium dengan fasilitas gym dan area kerja bersama. Cocok untuk profesional muda.',
+                        rating: 4.8,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Jasmine Comfort',
+                        address: 'Jl. Jasmine No. 18, Solo',
+                        price: 680000,
+                        rooms: 22,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Ani',
+                        status: 'tersedia',
+                        description: 'Kos nyaman di Solo dengan akses mudah ke pusat kota. Lingkungan bersih dan terawat.',
+                        rating: 4.4,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Rose Garden',
+                        address: 'Jl. Rose No. 5, Bogor',
+                        price: 720000,
+                        rooms: 19,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Pak Surya',
+                        status: 'tersedia',
+                        description: 'Kos dengan taman bunga yang indah di Bogor. Udara sejuk dan lingkungan hijau.',
+                        rating: 4.5,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Lotus Residence',
+                        address: 'Jl. Lotus Raya No. 12, Tangerang',
+                        price: 850000,
+                        rooms: 17,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Bu Linda',
+                        status: 'tersedia',
+                        description: 'Kos modern di Tangerang dengan fasilitas lengkap. Dekat dengan pusat bisnis.',
+                        rating: 4.6,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Orchid Paradise',
+                        address: 'Jl. Orchid No. 25, Bekasi',
+                        price: 780000,
+                        rooms: 21,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry',
+                        owner: 'Pak Rudi',
+                        status: 'tersedia',
+                        description: 'Kos dengan desain tropis di Bekasi. Fasilitas lengkap untuk kenyamanan penghuni.',
+                        rating: 4.3,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Sunflower Bright',
+                        address: 'Jl. Sunflower No. 7, Cirebon',
+                        price: 520000,
+                        rooms: 28,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Yuni',
+                        status: 'tersedia',
+                        description: 'Kos terang dan bersih di Cirebon. Harga ekonomis dengan fasilitas dasar lengkap.',
+                        rating: 4.0,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Magnolia Elite',
+                        address: 'Jl. Magnolia No. 3, Bandar Lampung',
+                        price: 900000,
+                        rooms: 15,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Kolam Renang',
+                        owner: 'Pak Arif',
+                        status: 'tersedia',
+                        description: 'Kos elite dengan kolam renang di Bandar Lampung. Fasilitas premium untuk kenyamanan maksimal.',
+                        rating: 4.7,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Lily Garden',
+                        address: 'Jl. Lily No. 14, Samarinda',
+                        price: 620000,
+                        rooms: 24,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Sari',
+                        status: 'tersedia',
+                        description: 'Kos dengan taman yang asri di Samarinda. Lingkungan tenang dan fasilitas memadai.',
+                        rating: 4.2,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Iris Residence',
+                        address: 'Jl. Iris Raya No. 6, Manado',
+                        price: 750000,
+                        rooms: 20,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry',
+                        owner: 'Pak Toni',
+                        status: 'tersedia',
+                        description: 'Kos modern di Manado dengan pemandangan laut. Fasilitas lengkap dan udara sejuk.',
+                        rating: 4.5,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Peony Comfort',
+                        address: 'Jl. Peony No. 11, Padang',
+                        price: 580000,
+                        rooms: 26,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Bu Mira',
+                        status: 'tersedia',
+                        description: 'Kos nyaman di Padang dengan harga terjangkau. Lingkungan aman dan fasilitas cukup.',
+                        rating: 4.1,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Hibiscus Villa',
+                        address: 'Jl. Hibiscus No. 8, Denpasar',
+                        price: 1400000,
+                        rooms: 13,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Kolam Renang, Gym',
+                        owner: 'Pak Wayan',
+                        status: 'tersedia',
+                        description: 'Villa kos mewah di Denpasar dengan kolam renang dan gym. Cocok untuk eksekutif muda.',
+                        rating: 4.9,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Daisy Simple',
+                        address: 'Jl. Daisy No. 20, Pekanbaru',
+                        price: 480000,
+                        rooms: 30,
+                        facilities: 'WiFi, Kipas Angin, Parkir Motor',
+                        owner: 'Pak Amir',
+                        status: 'tersedia',
+                        description: 'Kos sederhana dengan harga sangat terjangkau di Pekanbaru. Cocok untuk mahasiswa.',
+                        rating: 3.8,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Poppy Residence',
+                        address: 'Jl. Poppy No. 4, Mataram',
+                        price: 650000,
+                        rooms: 18,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Lestari',
+                        status: 'tersedia',
+                        description: 'Kos dengan desain Bali di Mataram. Fasilitas modern dengan sentuhan tradisional.',
+                        rating: 4.4,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Violet Garden',
+                        address: 'Jl. Violet No. 16, Kupang',
+                        price: 560000,
+                        rooms: 23,
+                        facilities: 'WiFi, Kamar Mandi Dalam, Laundry',
+                        owner: 'Pak Yosef',
+                        status: 'tersedia',
+                        description: 'Kos dengan taman ungu yang cantik di Kupang. Lingkungan hijau dan tenang.',
+                        rating: 4.0,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Narcissus Elite',
+                        address: 'Jl. Narcissus No. 2, Ambon',
+                        price: 880000,
+                        rooms: 16,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Bu Maria',
+                        status: 'tersedia',
+                        description: 'Kos elite di Ambon dengan fasilitas premium. Pemandangan laut yang indah.',
+                        rating: 4.6,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Wisteria Comfort',
+                        address: 'Jl. Wisteria No. 13, Jayapura',
+                        price: 720000,
+                        rooms: 19,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry',
+                        owner: 'Pak John',
+                        status: 'tersedia',
+                        description: 'Kos nyaman di Jayapura dengan fasilitas lengkap. Lingkungan aman dan bersih.',
+                        rating: 4.3,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Melati Baru',
+                        address: 'Jl. Melati Baru No. 20, Yogyakarta',
+                        price: 900000,
+                        rooms: 22,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Parkir',
+                        owner: 'Bu Sari Baru',
+                        status: 'tersedia',
+                        description: 'Kos baru dengan desain modern di pusat Yogyakarta. Dekat dengan kampus dan fasilitas umum.',
+                        rating: 4.4,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Anggrek Premium',
+                        address: 'Jl. Anggrek Premium No. 30, Jakarta Selatan',
+                        price: 1300000,
+                        rooms: 16,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Gym',
+                        owner: 'Pak Budi Premium',
+                        status: 'tersedia',
+                        description: 'Kos premium dengan fasilitas lengkap termasuk gym pribadi. Lokasi strategis dekat MRT.',
+                        rating: 4.7,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        type: 'kos',
+                        name: 'Kos Sakura Deluxe',
+                        address: 'Jl. Sakura Deluxe No. 40, Surabaya',
+                        price: 850000,
+                        rooms: 20,
+                        facilities: 'WiFi, AC, Kamar Mandi Dalam, Laundry, Parkir',
+                        owner: 'Bu Maya Deluxe',
+                        status: 'tersedia',
+                        description: 'Kos deluxe dengan taman indah dan fasilitas premium. Cocok untuk mahasiswa dan profesional.',
+                        rating: 4.5,
+                        createdAt: new Date().toISOString()
+                    },
+                ];
+
+                for (const kos of sampleKos) {
+                    await window.dataSdk.create(kos);
+                }
+                // No need to call update here, onDataChanged will handle it
+            }
+        }
+
+        // Navigation functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                link.classList.add('text-gray-500', 'hover:text-gray-700');
+            });
+
+            document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                link.classList.remove('text-blue-600', 'bg-blue-50');
+                link.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-50');
+            });
+
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+
+            // Add active class to clicked nav item
+            const activeDesktopLink = Array.from(document.querySelectorAll('.nav-link')).find(link => 
+                link.textContent.trim().toLowerCase().includes(sectionName.replace('-', ' '))
+            );
+            if (activeDesktopLink) {
+                activeDesktopLink.classList.remove('text-gray-500', 'hover:text-gray-700');
+                activeDesktopLink.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            }
+
+            const activeMobileLink = Array.from(document.querySelectorAll('.mobile-nav-link')).find(link => 
+                link.textContent.trim().toLowerCase().includes(sectionName.replace('-', ' '))
+            );
+            if (activeMobileLink) {
+                activeMobileLink.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-50');
+                activeMobileLink.classList.add('text-blue-600', 'bg-blue-50');
+            }
+
+            // Close mobile menu
+            document.getElementById('mobileMenu').classList.add('hidden');
+        }
+
+        // Close profile dropdown
+        function closeDropdown() {
+            document.getElementById('profileDropdown').classList.add('hidden');
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            const kos = allData.filter(item => item.type === 'kos');
+            const rentals = allData.filter(item => item.type === 'rental');
+            const payments = allData.filter(item => item.type === 'payment');
+            const messages = allData.filter(item => item.type === 'message');
+            const wishlist = allData.filter(item => item.type === 'wishlist');
+            const bookings = allData.filter(item => item.type === 'booking');
+
+            document.getElementById('availableKosCount').textContent = kos.filter(k => k.status === 'tersedia').length;
+            document.getElementById('activeRentals').textContent = rentals.filter(r => r.status === 'aktif').length;
+            document.getElementById('wishlistCount').textContent = wishlist.length;
+            document.getElementById('activeBookings').textContent = bookings.filter(b => b.status === 'confirmed').length;
+            document.getElementById('pendingPayments').textContent = payments.filter(p => p.payment_status === 'pending').length;
+            document.getElementById('newMessages').textContent = messages.filter(m => !m.read).length;
+
+            updateRecommendedKos();
+            updateRecentActivity();
+        }
+
+        // Update recommended kos
+        function updateRecommendedKos() {
+            // Use filtered results if search is active, otherwise show all available kos
+            const kosToShow = currentFilters.search || activeQuickFilters.length > 0 || (currentFilters.price && currentFilters.price !== 'all') 
+                ? filteredKos.slice(0, 3)
+                : allData.filter(item => item.type === 'kos' && item.status === 'tersedia').slice(0, 3);
+            
+            const container = document.getElementById('recommendedKos');
+
+            if (kosToShow.length === 0) {
+                const message = currentFilters.search || activeQuickFilters.length > 0 || (currentFilters.price && currentFilters.price !== 'all')
+                    ? 'Tidak ada kos yang sesuai dengan pencarian'
+                    : 'Belum ada rekomendasi kos tersedia';
+                container.innerHTML = `<div class="text-center py-12 col-span-full"><p class="text-gray-500">${message}</p></div>`;
+                return;
+            }
+
+            container.innerHTML = kosToShow.map(kosItem => createKosCard(kosItem)).join('');
+        }
+
+        // Create kos card
+        function createKosCard(kosItem, showRemoveFromWishlist = false) {
+            const rating = kosItem.rating || 4.0;
+            const stars = '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
+            const isInWishlist = allData.some(item => item.type === 'wishlist' && item.kos_id === kosItem.__backendId);
+
+            return `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 card-hover">
+                    <div class="relative">
+                        <div class="h-48 bg-gradient-to-br from-blue-400 to-purple-500 rounded-t-lg flex items-center justify-center">
+                            <div class="text-white text-center">
+                                <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                                </svg>
+                                <p class="text-sm opacity-75">Foto Kos</p>
+                            </div>
+                        </div>
+                        <button onclick="toggleWishlist('${kosItem.__backendId}')" class="absolute top-3 right-3 p-2 rounded-full bg-white shadow-lg hover:shadow-xl transition-all">
+                            <svg class="w-5 h-5 ${isInWishlist ? 'text-red-500' : 'text-gray-400'}" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="text-lg font-semibold text-gray-800">${kosItem.name}</h4>
+                            <div class="flex items-center text-sm text-yellow-500">
+                                <span class="star-rating">${stars}</span>
+                                <span class="ml-1 text-gray-600">(${rating})</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-2">${kosItem.address}</p>
+                        <p class="text-2xl font-bold text-blue-600 mb-3">Rp ${kosItem.price?.toLocaleString('id-ID')}/bulan</p>
+                        <div class="flex flex-wrap gap-1 mb-4">
+                            ${kosItem.facilities?.split(', ').slice(0, 3).map(facility => 
+                                `<span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">${facility}</span>`
+                            ).join('')}
+                        </div>
+                        <div class="flex space-x-2 mb-3">
+                            <button onclick="showKosDetail('${kosItem.__backendId}')" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                                Lihat Detail
+                            </button>
+                            <button onclick="contactOwnerDirect('${kosItem.__backendId}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                                Hubungi
+                            </button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="rentKosDirect('${kosItem.__backendId}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                                Sewa Sekarang
+                            </button>
+                            ${showRemoveFromWishlist ? 
+                                `<button onclick="removeFromWishlist('${kosItem.__backendId}')" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
+                                    Hapus
+                                </button>` : ''
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update recent activity
+        function updateRecentActivity() {
+            const recentData = allData
+                .filter(item => ['rental', 'payment', 'message'].includes(item.type))
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 5);
+
+            const activityContainer = document.getElementById('recentActivity');
+            
+            if (recentData.length === 0) {
+                activityContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada aktivitas terbaru</p>';
+                return;
+            }
+
+            activityContainer.innerHTML = recentData.map(item => {
+                const date = new Date(item.createdAt).toLocaleDateString('id-ID');
+                let description = '';
+                let icon = '';
+
+                if (item.type === 'rental') {
+                    description = `Sewa kos "${item.kos_name}" telah ${item.status}`;
+                    icon = '🏠';
+                } else if (item.type === 'payment') {
+                    description = `Pembayaran sebesar Rp ${item.amount?.toLocaleString('id-ID')} - ${item.payment_status}`;
+                    icon = '💰';
+                } else if (item.type === 'message') {
+                    description = `Pesan baru dari ${item.sender}`;
+                    icon = '💬';
+                }
+
+                return `
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <span class="text-2xl">${icon}</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-800">${description}</p>
+                            <p class="text-xs text-gray-500">${date}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update all sections
+        function updateAllSections() {
+            updateKosList();
+            updateWishlist();
+            updateBookings();
+            updateMyRentals();
+            updatePayments();
+        }
+
+        // Toggle wishlist
+        async function toggleWishlist(kosId) {
+            if (currentRecordCount >= 999) {
+                showNotification('Batas maksimum 999 data telah tercapai. Hapus beberapa data terlebih dahulu.', 'error');
+                return;
+            }
+
+            const existingWishlist = allData.find(item => item.type === 'wishlist' && item.kos_id === kosId);
+            
+            if (existingWishlist) {
+                // Remove from wishlist
+                const result = await window.dataSdk.delete(existingWishlist);
+                if (result.isOk) {
+                    showNotification('Kos dihapus dari wishlist', 'info');
+                } else {
+                    showNotification('Gagal menghapus dari wishlist', 'error');
+                }
+            } else {
+                // Add to wishlist
+                const kosItem = allData.find(item => item.__backendId === kosId);
+                if (kosItem) {
+                    const wishlistData = {
+                        type: 'wishlist',
+                        kos_id: kosId,
+                        kos_name: kosItem.name,
+                        kos_price: kosItem.price,
+                        kos_address: kosItem.address,
+                        kos_facilities: kosItem.facilities,
+                        kos_rating: kosItem.rating,
+                        kos_description: kosItem.description,
+                        kos_owner: kosItem.owner,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    const result = await window.dataSdk.create(wishlistData);
+                    if (result.isOk) {
+                        showNotification('Kos ditambahkan ke wishlist ❤️', 'success');
+                    } else {
+                        showNotification('Gagal menambahkan ke wishlist', 'error');
+                    }
+                }
+            }
+        }
+
+        // Update wishlist
+        function updateWishlist() {
+            const wishlistItems = allData.filter(item => item.type === 'wishlist');
+            const container = document.getElementById('wishlistGrid');
+
+            if (wishlistItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500">Belum ada kos di wishlist</p>
+                        <p class="text-sm text-gray-400 mt-2">Klik ikon ❤️ pada kos untuk menambahkan ke wishlist</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = wishlistItems.map(wishlistItem => {
+                const kosData = {
+                    __backendId: wishlistItem.kos_id,
+                    name: wishlistItem.kos_name,
+                    price: wishlistItem.kos_price,
+                    address: wishlistItem.kos_address,
+                    facilities: wishlistItem.kos_facilities,
+                    rating: wishlistItem.kos_rating,
+                    description: wishlistItem.kos_description,
+                    owner: wishlistItem.kos_owner
+                };
+                return createKosCard(kosData, true);
+            }).join('');
+        }
+
+        // Remove from wishlist
+        async function removeFromWishlist(kosId) {
+            const wishlistItem = allData.find(item => item.type === 'wishlist' && item.kos_id === kosId);
+            if (wishlistItem) {
+                const result = await window.dataSdk.delete(wishlistItem);
+                if (result.isOk) {
+                    showNotification('Kos dihapus dari wishlist', 'info');
+                } else {
+                    showNotification('Gagal menghapus dari wishlist', 'error');
+                }
+            }
+        }
+
+        // Clear all wishlist
+        function clearWishlist() {
+            const wishlistItems = allData.filter(item => item.type === 'wishlist');
+            
+            if (wishlistItems.length === 0) {
+                showNotification('Wishlist sudah kosong', 'info');
+                return;
+            }
+
+            // Show confirmation modal
+            showConfirmation(
+                `Apakah Anda yakin ingin menghapus semua ${wishlistItems.length} kos dari wishlist?`,
+                async () => {
+                    showLoading();
+                    for (const item of wishlistItems) {
+                        await window.dataSdk.delete(item);
+                    }
+                    hideLoading();
+                    showNotification('Semua kos telah dihapus dari wishlist', 'success');
+                }
+            );
+        }
+
+        // Update kos list
+        function updateKosList() {
+            const kos = allData.filter(item => item.type === 'kos' && item.status === 'tersedia');
+            filteredKos = kos;
+            renderKosList();
+        }
+
+        // Render kos list
+        function renderKosList() {
+            const container = document.getElementById('kosGrid');
+
+            if (filteredKos.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 col-span-full"><p class="text-gray-500">Tidak ada kos yang sesuai dengan filter</p></div>';
+                return;
+            }
+
+            container.innerHTML = filteredKos.map(kosItem => createKosCard(kosItem)).join('');
+        }
+
+        // Filter functions
+        function filterByPrice(priceRange) {
+            // Remove active class from all price filters
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('filter-active');
+            });
+
+            // Add active class to clicked filter
+            event.target.classList.add('filter-active');
+            currentFilters.price = priceRange;
+        }
+
+        function applyFilters() {
+            const kos = allData.filter(item => item.type === 'kos' && item.status === 'tersedia');
+            
+            filteredKos = kos.filter(kosItem => {
+                // Price filter
+                if (currentFilters.price !== 'all') {
+                    const price = kosItem.price || 0;
+                    const [min, max] = currentFilters.price.split('-').map(p => p.replace('+', ''));
+                    
+                    if (max) {
+                        if (price < parseInt(min) || price > parseInt(max)) return false;
+                    } else {
+                        if (price < parseInt(min)) return false;
+                    }
+                }
+
+                // Facility filter
+                if (currentFilters.facilities.length > 0) {
+                    const kosFacilities = kosItem.facilities || '';
+                    const hasAllFacilities = currentFilters.facilities.every(facility => 
+                        kosFacilities.includes(facility)
+                    );
+                    if (!hasAllFacilities) return false;
+                }
+
+                // Location filter
+                if (currentFilters.location) {
+                    const kosAddress = kosItem.address || '';
+                    if (!kosAddress.toLowerCase().includes(currentFilters.location.toLowerCase())) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            renderKosList();
+        }
+
+        // Sort kos
+        function sortKos() {
+            const sortBy = document.getElementById('sortBy').value;
+            
+            filteredKos.sort((a, b) => {
+                switch (sortBy) {
+                    case 'price-low':
+                        return (a.price || 0) - (b.price || 0);
+                    case 'price-high':
+                        return (b.price || 0) - (a.price || 0);
+                    case 'rating':
+                        return (b.rating || 0) - (a.rating || 0);
+                    case 'newest':
+                    default:
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+            });
+
+            renderKosList();
+        }
+
+        // Update my rentals
+        function updateMyRentals() {
+            const rentals = allData.filter(item => item.type === 'rental');
+            const activeRentals = rentals.filter(r => r.status === 'aktif');
+            const rentalHistory = rentals.filter(r => r.status !== 'aktif');
+
+            // Active rentals
+            const activeContainer = document.getElementById('activeRentalsList');
+            if (activeRentals.length === 0) {
+                activeContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada sewa aktif</p>';
+            } else {
+                activeContainer.innerHTML = activeRentals.map(rental => `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h5 class="font-semibold text-gray-800">${rental.kos_name || 'Kos'}</h5>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Aktif</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-2">Mulai: ${new Date(rental.start_date).toLocaleDateString('id-ID')}</p>
+                        <p class="text-sm text-gray-600 mb-2">Berakhir: ${new Date(rental.end_date).toLocaleDateString('id-ID')}</p>
+                        <p class="text-lg font-bold text-blue-600">Rp ${rental.amount?.toLocaleString('id-ID')}/bulan</p>
+                    </div>
+                `).join('');
+            }
+
+            // Rental history
+            const historyContainer = document.getElementById('rentalHistory');
+            if (rentalHistory.length === 0) {
+                historyContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada riwayat sewa</p>';
+            } else {
+                historyContainer.innerHTML = rentalHistory.map(rental => `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h5 class="font-semibold text-gray-800">${rental.kos_name || 'Kos'}</h5>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">${rental.status}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-2">Periode: ${new Date(rental.start_date).toLocaleDateString('id-ID')} - ${new Date(rental.end_date).toLocaleDateString('id-ID')}</p>
+                        <p class="text-lg font-bold text-gray-600">Rp ${rental.amount?.toLocaleString('id-ID')}/bulan</p>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Update payments
+        function updatePayments() {
+            const payments = allData.filter(item => item.type === 'payment');
+            const tbody = document.getElementById('paymentsTableBody');
+
+            if (payments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Belum ada riwayat pembayaran</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = payments.map(payment => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(payment.payment_date).toLocaleDateString('id-ID')}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${payment.kos_name || 'Kos'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp ${payment.amount?.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${
+                            payment.payment_status === 'lunas' ? 'bg-green-100 text-green-800' : 
+                            payment.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }">${payment.payment_status}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ${payment.payment_status === 'pending' ? 
+                            '<button onclick="payNow(\'' + payment.__backendId + '\')" class="text-blue-600 hover:text-blue-900">Bayar Sekarang</button>' :
+                            '<span class="text-gray-400">-</span>'
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Modal functions
+        function showKosDetail(backendId) {
+            selectedKos = allData.find(item => item.__backendId === backendId);
+            if (!selectedKos) return;
+
+            document.getElementById('modalKosName').textContent = selectedKos.name;
+            
+            const rating = selectedKos.rating || 4.0;
+            const stars = '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
+            const isInWishlist = allData.some(item => item.type === 'wishlist' && item.kos_id === selectedKos.__backendId);
+
+            document.getElementById('modalKosContent').innerHTML = `
+                <div class="relative h-64 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center mb-4">
+                    <div class="text-white text-center">
+                        <svg class="w-20 h-20 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                        </svg>
+                        <p class="opacity-75">Foto Kos</p>
+                    </div>
+                    <button onclick="toggleWishlist('${selectedKos.__backendId}')" class="absolute top-3 right-3 p-2 rounded-full bg-white shadow-lg hover:shadow-xl transition-all">
+                        <svg class="w-6 h-6 ${isInWishlist ? 'text-red-500' : 'text-gray-400'}" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <p class="text-gray-600"><strong>Alamat:</strong> ${selectedKos.address}</p>
+                        <div class="flex items-center text-sm text-yellow-500">
+                            <span class="star-rating">${stars}</span>
+                            <span class="ml-1 text-gray-600">(${rating})</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-600"><strong>Harga:</strong> <span class="text-2xl font-bold text-blue-600">Rp ${selectedKos.price?.toLocaleString('id-ID')}/bulan</span></p>
+                    <p class="text-gray-600"><strong>Jumlah Kamar:</strong> ${selectedKos.rooms} kamar</p>
+                    <p class="text-gray-600"><strong>Pemilik:</strong> ${selectedKos.owner}</p>
+                    <div>
+                        <p class="text-gray-600 mb-2"><strong>Fasilitas:</strong></p>
+                        <div class="flex flex-wrap gap-2">
+                            ${selectedKos.facilities?.split(', ').map(facility => 
+                                `<span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">${facility}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 mb-2"><strong>Deskripsi:</strong></p>
+                        <p class="text-gray-700">${selectedKos.description || 'Tidak ada deskripsi tersedia.'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-2">Status Wishlist:</p>
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 ${isInWishlist ? 'text-red-500' : 'text-gray-400'} mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-sm ${isInWishlist ? 'text-red-600 font-medium' : 'text-gray-500'}">
+                                ${isInWishlist ? 'Sudah di wishlist' : 'Belum di wishlist'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('kosDetailModal').classList.remove('hidden');
+            document.getElementById('kosDetailModal').classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('loadingOverlay').classList.remove('flex');
+        }
+
+        // Show confirmation modal
+        function showConfirmation(message, onConfirm) {
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmButton').onclick = () => {
+                closeModal('confirmModal');
+                onConfirm();
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('confirmModal').classList.add('flex');
+        }
+
+        // Contact and rent functions
+        function contactOwner() {
+            closeModal('kosDetailModal');
+            document.getElementById('contactModal').classList.remove('hidden');
+            document.getElementById('contactModal').classList.add('flex');
+        }
+
+        function contactOwnerDirect(backendId) {
+            selectedKos = allData.find(item => item.__backendId === backendId);
+            contactOwner();
+        }
+
+        function rentKos() {
+            closeModal('kosDetailModal');
+            document.getElementById('rentModal').classList.remove('hidden');
+            document.getElementById('rentModal').classList.add('flex');
+            
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('rentStartDate').value = today;
+            document.getElementById('rentStartDate').min = today;
+        }
+
+        function rentKosDirect(backendId) {
+            selectedKos = allData.find(item => item.__backendId === backendId);
+            rentKos();
+        }
+
+        function calculateTotalCost() {
+            if (!selectedKos) return;
+            
+            const duration = parseInt(document.getElementById('rentDuration').value) || 0;
+            const totalCost = selectedKos.price * duration;
+            
+            document.getElementById('totalCost').textContent = `Rp ${totalCost.toLocaleString('id-ID')}`;
+        }
+
+        // Form submission functions
+        async function sendMessage(event) {
+            event.preventDefault();
+            
+            if (currentRecordCount >= 999) {
+                showNotification('Batas maksimum 999 data telah tercapai. Hapus beberapa data terlebih dahulu.', 'error');
+                return;
+            }
+
+            if (!selectedKos) return;
+
+            showLoading();
+
+            const messageData = {
+                type: 'message',
+                message: document.getElementById('messageText').value,
+                sender: 'Penyewa',
+                receiver: selectedKos.owner,
+                kos_id: selectedKos.__backendId,
+                read: false,
+                createdAt: new Date().toISOString()
+            };
+
+            const result = await window.dataSdk.create(messageData);
+            hideLoading();
+
+            if (result.isOk) {
+                closeModal('contactModal');
+                document.getElementById('messageText').value = '';
+                showNotification('Pesan berhasil dikirim ke pemilik kos!', 'success');
+            } else {
+                showNotification('Gagal mengirim pesan. Silakan coba lagi.', 'error');
+            }
+        }
+
+        async function confirmRent(event) {
+            event.preventDefault();
+            
+            if (currentRecordCount >= 999) {
+                showNotification('Batas maksimum 999 data telah tercapai. Hapus beberapa data terlebih dahulu.', 'error');
+                return;
+            }
+
+            if (!selectedKos) return;
+
+            showLoading();
+
+            const startDate = new Date(document.getElementById('rentStartDate').value);
+            const duration = parseInt(document.getElementById('rentDuration').value);
+            const endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + duration);
+
+            // Create booking instead of direct rental
+            const bookingData = {
+                type: 'booking',
+                tenant_id: 'current_user',
+                kos_id: selectedKos.__backendId,
+                kos_name: selectedKos.name,
+                kos_address: selectedKos.address,
+                kos_price: selectedKos.price,
+                start_date: startDate.toISOString(),
+                end_date: endDate.toISOString(),
+                duration: duration,
+                total_amount: selectedKos.price * duration,
+                status: 'pending_payment',
+                booking_date: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            };
+
+            const bookingResult = await window.dataSdk.create(bookingData);
+            hideLoading();
+
+            if (bookingResult.isOk) {
+                closeModal('rentModal');
+                document.getElementById('rentStartDate').value = '';
+                document.getElementById('rentDuration').value = '';
+                document.getElementById('totalCost').textContent = 'Rp 0';
+                
+                // Show booking payment modal
+                selectedBooking = bookingData;
+                showBookingPaymentModal();
+            } else {
+                showNotification('Gagal membuat booking. Silakan coba lagi.', 'error');
+            }
+        }
+
+        // Booking functions
+        function showBookingTab(tabName) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.booking-tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Hide all tab contents
+            document.querySelectorAll('.booking-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + 'BookingTab').classList.remove('hidden');
+            
+            // Add active class to clicked tab
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+        }
+
+        function updateBookings() {
+            const bookings = allData.filter(item => item.type === 'booking');
+            
+            // Active bookings (confirmed)
+            const activeBookings = bookings.filter(b => b.status === 'confirmed');
+            updateBookingList('activeBookingsList', activeBookings, 'active');
+
+            // Pending bookings (waiting for confirmation)
+            const pendingBookings = bookings.filter(b => ['pending_payment', 'payment_verification', 'pending_confirmation'].includes(b.status));
+            updateBookingList('pendingBookingsList', pendingBookings, 'pending');
+
+            // Booking history (completed, cancelled, rejected)
+            const historyBookings = bookings.filter(b => ['completed', 'cancelled', 'rejected'].includes(b.status));
+            updateBookingList('historyBookingsList', historyBookings, 'history');
+        }
+
+        function updateBookingList(containerId, bookings, type) {
+            const container = document.getElementById(containerId);
+            
+            if (bookings.length === 0) {
+                let emptyMessage = '';
+                let emptyIcon = '';
+                
+                if (type === 'active') {
+                    emptyMessage = 'Belum ada booking aktif';
+                    emptyIcon = '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                } else if (type === 'pending') {
+                    emptyMessage = 'Belum ada booking menunggu konfirmasi';
+                    emptyIcon = '<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                } else {
+                    emptyMessage = 'Belum ada riwayat booking';
+                    emptyIcon = '<path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>';
+                }
+
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                ${emptyIcon}
+                            </svg>
+                        </div>
+                        <p class="text-gray-500">${emptyMessage}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = bookings.map(booking => createBookingCard(booking, type)).join('');
+        }
+
+        function createBookingCard(booking, type) {
+            const statusColors = {
+                'pending_payment': 'bg-yellow-100 text-yellow-800',
+                'payment_verification': 'bg-blue-100 text-blue-800',
+                'pending_confirmation': 'bg-orange-100 text-orange-800',
+                'confirmed': 'bg-green-100 text-green-800',
+                'completed': 'bg-gray-100 text-gray-800',
+                'cancelled': 'bg-red-100 text-red-800',
+                'rejected': 'bg-red-100 text-red-800'
+            };
+
+            const statusText = {
+                'pending_payment': 'Menunggu Pembayaran',
+                'payment_verification': 'Verifikasi Pembayaran',
+                'pending_confirmation': 'Menunggu Konfirmasi',
+                'confirmed': 'Dikonfirmasi',
+                'completed': 'Selesai',
+                'cancelled': 'Dibatalkan',
+                'rejected': 'Ditolak'
+            };
+
+            const startDate = new Date(booking.start_date).toLocaleDateString('id-ID');
+            const endDate = new Date(booking.end_date).toLocaleDateString('id-ID');
+            const bookingDate = new Date(booking.booking_date).toLocaleDateString('id-ID');
+
+            let actionButtons = '';
+            if (booking.status === 'pending_payment') {
+                actionButtons = `
+                    <button onclick="payBooking('${booking.__backendId}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                        Bayar Sekarang
+                    </button>
+                    <button onclick="cancelBooking('${booking.__backendId}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                        Batalkan
+                    </button>
+                `;
+            } else if (booking.status === 'confirmed') {
+                actionButtons = `
+                    <button onclick="viewBookingDetails('${booking.__backendId}')" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                        Lihat Detail
+                    </button>
+                `;
+            }
+
+            return `
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h5 class="font-semibold text-gray-800">${booking.kos_name}</h5>
+                            <p class="text-sm text-gray-600">${booking.kos_address}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status]}">
+                            ${statusText[booking.status]}
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                        <div>
+                            <p><strong>Tanggal Booking:</strong> ${bookingDate}</p>
+                            <p><strong>Check-in:</strong> ${startDate}</p>
+                        </div>
+                        <div>
+                            <p><strong>Durasi:</strong> ${booking.duration} bulan</p>
+                            <p><strong>Check-out:</strong> ${endDate}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <p class="text-lg font-bold text-blue-600">Rp ${booking.total_amount?.toLocaleString('id-ID')}</p>
+                        <div class="flex space-x-2">
+                            ${actionButtons}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Booking payment functions
+        let selectedBooking = null;
+
+        function showBookingPaymentModal() {
+            if (!selectedBooking) return;
+
+            // Populate booking summary
+            const summary = `
+                <div class="flex justify-between"><span>Nama Kos:</span><span class="font-medium">${selectedBooking.kos_name}</span></div>
+                <div class="flex justify-between"><span>Alamat:</span><span class="font-medium">${selectedBooking.kos_address}</span></div>
+                <div class="flex justify-between"><span>Durasi:</span><span class="font-medium">${selectedBooking.duration} bulan</span></div>
+                <div class="flex justify-between"><span>Harga per bulan:</span><span class="font-medium">Rp ${selectedBooking.kos_price?.toLocaleString('id-ID')}</span></div>
+                <div class="flex justify-between border-t pt-2 mt-2"><span class="font-semibold">Total Pembayaran:</span><span class="font-bold text-blue-600">Rp ${selectedBooking.total_amount?.toLocaleString('id-ID')}</span></div>
+            `;
+            document.getElementById('bookingSummary').innerHTML = summary;
+
+            // Setup payment method selection
+            setupPaymentMethodSelection();
+
+            // Setup file upload
+            setupFileUpload();
+
+            document.getElementById('bookingPaymentModal').classList.remove('hidden');
+            document.getElementById('bookingPaymentModal').classList.add('flex');
+        }
+
+        function setupPaymentMethodSelection() {
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.addEventListener('click', () => {
+                    // Remove active state from all methods
+                    document.querySelectorAll('.payment-method div').forEach(div => {
+                        div.classList.remove('border-blue-500', 'bg-blue-50');
+                        div.classList.add('border-gray-200');
+                    });
+
+                    // Add active state to selected method
+                    const methodDiv = method.querySelector('div');
+                    methodDiv.classList.remove('border-gray-200');
+                    methodDiv.classList.add('border-blue-500', 'bg-blue-50');
+
+                    // Check the radio button
+                    const radio = method.querySelector('input[type="radio"]');
+                    radio.checked = true;
+
+                    // Show payment details
+                    showPaymentDetails(radio.value);
+                });
+            });
+        }
+
+        function showPaymentDetails(paymentMethod) {
+            const detailsContainer = document.getElementById('paymentDetails');
+            const instructionsContainer = document.getElementById('paymentInstructions');
+            
+            let instructions = '';
+            
+            switch (paymentMethod) {
+                case 'bank_transfer':
+                    instructions = `
+                        <h5 class="font-semibold text-blue-800 mb-3">Instruksi Transfer Bank</h5>
+                        <div class="space-y-2 text-sm">
+                            <div class="bg-white rounded p-3 border">
+                                <p class="font-medium">Bank BCA</p>
+                                <p>No. Rekening: <span class="font-mono">1234567890</span></p>
+                                <p>Atas Nama: PT KosKu Indonesia</p>
+                            </div>
+                            <div class="bg-white rounded p-3 border">
+                                <p class="font-medium">Bank Mandiri</p>
+                                <p>No. Rekening: <span class="font-mono">0987654321</span></p>
+                                <p>Atas Nama: PT KosKu Indonesia</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-blue-600 mt-3">Transfer sesuai nominal yang tertera dan upload bukti pembayaran</p>
+                    `;
+                    break;
+                case 'e_wallet':
+                    instructions = `
+                        <h5 class="font-semibold text-green-800 mb-3">Instruksi E-Wallet</h5>
+                        <div class="space-y-2 text-sm">
+                            <p>1. Buka aplikasi e-wallet Anda (GoPay/OVO/DANA/LinkAja)</p>
+                            <p>2. Pilih menu "Transfer" atau "Kirim Uang"</p>
+                            <p>3. Masukkan nomor: <span class="font-mono font-semibold">081234567890</span></p>
+                            <p>4. Atas nama: <strong>KosKu Indonesia</strong></p>
+                            <p>5. Masukkan nominal sesuai total pembayaran</p>
+                            <p>6. Screenshot bukti transfer dan upload di bawah</p>
+                        </div>
+                    `;
+                    break;
+                case 'virtual_account':
+                    instructions = `
+                        <h5 class="font-semibold text-purple-800 mb-3">Instruksi Virtual Account</h5>
+                        <div class="space-y-2 text-sm">
+                            <p>Nomor Virtual Account Anda:</p>
+                            <div class="bg-white rounded p-3 border text-center">
+                                <p class="font-mono text-lg font-bold">8808 1234 5678 9012</p>
+                            </div>
+                            <p class="text-xs">Bayar melalui ATM, Mobile Banking, atau Internet Banking dengan nomor VA di atas</p>
+                        </div>
+                    `;
+                    break;
+                case 'credit_card':
+                    instructions = `
+                        <h5 class="font-semibold text-yellow-800 mb-3">Pembayaran Kartu Kredit</h5>
+                        <div class="text-sm">
+                            <p class="mb-2">Untuk pembayaran kartu kredit, silakan hubungi customer service kami:</p>
+                            <div class="bg-white rounded p-3 border">
+                                <p>📞 <strong>0800-1234-5678</strong></p>
+                                <p>💬 <strong>WhatsApp: +62 812-3456-7890</strong></p>
+                            </div>
+                            <p class="text-xs text-yellow-600 mt-2">Tim CS akan membantu proses pembayaran kartu kredit Anda</p>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            instructionsContainer.innerHTML = instructions;
+            detailsContainer.classList.remove('hidden');
+        }
+
+        function setupFileUpload() {
+            const fileInput = document.getElementById('paymentProof');
+            const uploadedFileDiv = document.getElementById('uploadedFile');
+            const fileNameSpan = document.getElementById('fileName');
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        showNotification('Ukuran file maksimal 5MB', 'error');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
+                    fileNameSpan.textContent = file.name;
+                    uploadedFileDiv.classList.remove('hidden');
+                }
+            });
+        }
+
+        async function submitPayment() {
+            const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
+            const fileInput = document.getElementById('paymentProof');
+            
+            if (!selectedMethod) {
+                showNotification('Pilih metode pembayaran terlebih dahulu', 'error');
+                return;
+            }
+
+            if (!fileInput.files[0]) {
+                showNotification('Upload bukti pembayaran terlebih dahulu', 'error');
+                return;
+            }
+
+            if (currentRecordCount >= 999) {
+                showNotification('Batas maksimum 999 data telah tercapai. Hapus beberapa data terlebih dahulu.', 'error');
+                return;
+            }
+
+            showLoading();
+
+            // Create payment record
+            const paymentData = {
+                type: 'booking_payment',
+                booking_id: selectedBooking.__backendId || 'temp_booking',
+                kos_id: selectedBooking.kos_id,
+                kos_name: selectedBooking.kos_name,
+                amount: selectedBooking.total_amount,
+                payment_method: selectedMethod.value,
+                payment_proof: fileInput.files[0].name,
+                payment_status: 'verification',
+                payment_date: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            };
+
+            // Update booking status
+            if (selectedBooking.__backendId) {
+                const updatedBooking = { 
+                    ...selectedBooking, 
+                    status: 'payment_verification',
+                    payment_method: selectedMethod.value,
+                    payment_proof: fileInput.files[0].name
+                };
+                await window.dataSdk.update(updatedBooking);
+            }
+
+            const paymentResult = await window.dataSdk.create(paymentData);
+            hideLoading();
+
+            if (paymentResult.isOk) {
+                closeModal('bookingPaymentModal');
+                
+                // Reset form
+                document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => radio.checked = false);
+                document.querySelectorAll('.payment-method div').forEach(div => {
+                    div.classList.remove('border-blue-500', 'bg-blue-50');
+                    div.classList.add('border-gray-200');
+                });
+                document.getElementById('paymentDetails').classList.add('hidden');
+                document.getElementById('paymentProof').value = '';
+                document.getElementById('uploadedFile').classList.add('hidden');
+                
+                // Show verification modal
+                document.getElementById('paymentVerificationModal').classList.remove('hidden');
+                document.getElementById('paymentVerificationModal').classList.add('flex');
+            } else {
+                showNotification('Gagal mengirim pembayaran. Silakan coba lagi.', 'error');
+            }
+        }
+
+        function payBooking(bookingId) {
+            selectedBooking = allData.find(item => item.__backendId === bookingId);
+            if (selectedBooking) {
+                showBookingPaymentModal();
+            }
+        }
+
+        async function cancelBooking(bookingId) {
+            const booking = allData.find(item => item.__backendId === bookingId);
+            if (!booking) return;
+
+            showConfirmation(
+                `Apakah Anda yakin ingin membatalkan booking "${booking.kos_name}"?`,
+                async () => {
+                    showLoading();
+                    const updatedBooking = { ...booking, status: 'cancelled' };
+                    const result = await window.dataSdk.update(updatedBooking);
+                    hideLoading();
+
+                    if (result.isOk) {
+                        showNotification('Booking berhasil dibatalkan', 'success');
+                    } else {
+                        showNotification('Gagal membatalkan booking', 'error');
+                    }
+                }
+            );
+        }
+
+        function viewBookingDetails(bookingId) {
+            const booking = allData.find(item => item.__backendId === bookingId);
+            if (!booking) return;
+
+            // Find associated kos for detail modal
+            const kosItem = allData.find(item => item.__backendId === booking.kos_id);
+            if (kosItem) {
+                showKosDetail(booking.kos_id);
+            }
+        }
+
+        function showHelpModal() {
+            document.getElementById('helpModal').classList.remove('hidden');
+            document.getElementById('helpModal').classList.add('flex');
+        }
+
+        async function updateProfile(event) {
+            event.preventDefault();
+            
+            const tenantName = document.getElementById('profileName').value;
+            
+            // Update avatar
+            const avatar = document.getElementById('userAvatar');
+            avatar.textContent = (tenantName.charAt(0) || 'P').toUpperCase();
+
+            if (window.elementSdk) {
+                await window.elementSdk.setConfig({ tenant_name: tenantName });
+                showNotification('Profil berhasil diperbarui!', 'success');
+            }
+        }
+
+        function changePassword(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showNotification('Password baru dan konfirmasi password tidak cocok!', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showNotification('Password baru harus minimal 6 karakter!', 'error');
+                return;
+            }
+
+            // Clear form
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            
+            showNotification('Password berhasil diubah!', 'success');
+        }
+
+        async function payNow(paymentId) {
+            const payment = allData.find(item => item.__backendId === paymentId);
+            if (!payment) return;
+
+            showLoading();
+
+            const updatedPayment = { ...payment, payment_status: 'lunas' };
+            const result = await window.dataSdk.update(updatedPayment);
+
+            hideLoading();
+
+            if (result.isOk) {
+                showNotification('Pembayaran berhasil! Status telah diperbarui.', 'success');
+            } else {
+                showNotification('Gagal memproses pembayaran. Silakan coba lagi.', 'error');
+            }
+        }
+
+        // Review functions
+        function showReviewTab(tabName) {
+            document.querySelectorAll('.review-tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.querySelectorAll('.review-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+
+            if (tabName === 'writeReview') {
+                populateRentedKosSelect();
+            }
+        }
+
+        function populateRentedKosSelect() {
+            const rentedKos = allData.filter(item => item.type === 'rental' && item.status === 'selesai');
+            const select = document.getElementById('reviewKosSelect');
+            select.innerHTML = '<option value="">-- Pilih Kos --</option>';
+            
+            const uniqueKos = [...new Map(rentedKos.map(item => [item['kos_id'], item])).values()];
+
+            if (uniqueKos.length > 0) {
+                uniqueKos.forEach(kos => {
+                    select.innerHTML += `<option value="${kos.kos_id}">${kos.kos_name}</option>`;
+                });
+            } else {
+                select.innerHTML = '<option value="">Anda belum memiliki riwayat sewa</option>';
+                select.disabled = true;
+            }
+        }
+
+        async function submitReview(event) {
+            event.preventDefault();
+            showLoading();
+            // Logic to submit review
+            setTimeout(() => {
+                hideLoading();
+                showNotification('Review berhasil dikirim!', 'success');
+                event.target.reset();
+                // Reset stars
+                document.querySelectorAll('.star-rating-input svg').forEach(star => {
+                    star.classList.add('text-gray-300');
+                    star.classList.remove('text-yellow-400');
+                });
+            }, 1000);
+        }
+
+        // Feedback functions
+        async function submitFeedback(event) {
+            event.preventDefault();
+            if (currentRecordCount >= 999) {
+                showNotification('Batas maksimum 999 data telah tercapai.', 'error');
+                return;
+            }
+            showLoading();
+            const feedbackData = {
+                type: 'app_feedback',
+                category: document.getElementById('feedbackCategory').value,
+                message: document.getElementById('feedbackMessage').value,
+                status: 'submitted',
+                createdAt: new Date().toISOString()
+            };
+            const result = await window.dataSdk.create(feedbackData);
+            hideLoading();
+            if (result.isOk) {
+                showNotification('Feedback berhasil dikirim. Terima kasih!', 'success');
+                event.target.reset();
+                updateFeedbackHistory();
+            } else {
+                showNotification('Gagal mengirim feedback.', 'error');
+            }
+        }
+
+        function updateFeedbackHistory() {
+            const feedbacks = allData.filter(item => item.type === 'app_feedback').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const container = document.getElementById('feedbackHistory');
+            if (feedbacks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada riwayat feedback.</p>';
+                return;
+            }
+            container.innerHTML = feedbacks.map(fb => `
+                <div class="p-3 bg-gray-50 rounded-lg border">
+                    <p class="font-semibold text-sm text-gray-800">${fb.category}</p>
+                    <p class="text-sm text-gray-600 truncate">${fb.message}</p>
+                    <p class="text-xs text-gray-400 mt-1">${new Date(fb.createdAt).toLocaleString('id-ID')}</p>
+                </div>
+            `).join('');
+        }
+
+        // Complaint functions
+        async function submitComplaint(event) {
+            event.preventDefault();
+            if (currentRecordCount >= 999) {
+                showNotification('Batas maksimum 999 data telah tercapai.', 'error');
+                return;
+            }
+            showLoading();
+            const complaintData = {
+                type: 'complaint',
+                category: document.getElementById('complaintCategory').value,
+                priority: document.getElementById('complaintPriority').value,
+                description: document.getElementById('complaintDescription').value,
+                proof: document.getElementById('complaintProof').files[0]?.name || 'Tidak ada',
+                status: 'diajukan',
+                createdAt: new Date().toISOString()
+            };
+            const result = await window.dataSdk.create(complaintData);
+            hideLoading();
+            if (result.isOk) {
+                showNotification('Keluhan berhasil diajukan. Tim kami akan segera menindaklanjuti.', 'success');
+                event.target.reset();
+                updateComplaintHistory();
+            } else {
+                showNotification('Gagal mengajukan keluhan.', 'error');
+            }
+        }
+
+        function updateComplaintHistory() {
+            const complaints = allData.filter(item => item.type === 'complaint').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const container = document.getElementById('complaintHistory');
+            if (complaints.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada riwayat keluhan.</p>';
+                return;
+            }
+            container.innerHTML = complaints.map(c => `
+                <div class="p-3 bg-gray-50 rounded-lg border">
+                    <div class="flex justify-between items-start">
+                        <p class="font-semibold text-sm text-gray-800">${c.category}</p>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">${c.status}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1 truncate">${c.description}</p>
+                    <p class="text-xs text-gray-400 mt-1">${new Date(c.createdAt).toLocaleString('id-ID')}</p>
+                </div>
+            `).join('');
+        }
+
+        // Main search function
+        function performMainSearch() {
+            const kos = allData.filter(item => item.type === 'kos' && item.status === 'tersedia');
+            
+            filteredKos = kos.filter(kosItem => {
+                // Search text filter
+                if (currentFilters.search) {
+                    const searchTerm = currentFilters.search.toLowerCase();
+                    const searchableText = `${kosItem.name} ${kosItem.address} ${kosItem.facilities} ${kosItem.description}`.toLowerCase();
+                    if (!searchableText.includes(searchTerm)) return false;
+                }
+
+                // Price filter
+                if (currentFilters.price && currentFilters.price !== 'all') {
+                    const price = kosItem.price || 0;
+                    const [min, max] = currentFilters.price.split('-').map(p => p.replace('+', ''));
+                    
+                    if (max) {
+                        if (price < parseInt(min) || price > parseInt(max)) return false;
+                    } else {
+                        if (price < parseInt(min)) return false;
+                    }
+                }
+
+                // Quick facility filters
+                if (activeQuickFilters.length > 0) {
+                    const kosFacilities = kosItem.facilities || '';
+                    const hasAllFacilities = activeQuickFilters.every(facility => 
+                        kosFacilities.includes(facility)
+                    );
+                    if (!hasAllFacilities) return false;
+                }
+
+                return true;
+            });
+
+            // Update recommended kos on home page
+            updateRecommendedKos();
+            
+            // If we're on kos list page, update the grid
+            if (!document.getElementById('kosListSection').classList.contains('hidden')) {
+                renderKosList();
+            }
+
+            // Show search results count
+            updateSearchResultsCount();
+        }
+
+        // Quick filter function
+        function quickFilter(facility) {
+            const button = event.target;
+            
+            if (activeQuickFilters.includes(facility)) {
+                // Remove filter
+                activeQuickFilters = activeQuickFilters.filter(f => f !== facility);
+                button.classList.remove('bg-blue-100', 'text-blue-700');
+                button.classList.add('bg-gray-100', 'text-gray-700');
+            } else {
+                // Add filter
+                activeQuickFilters.push(facility);
+                button.classList.remove('bg-gray-100', 'text-gray-700');
+                button.classList.add('bg-blue-100', 'text-blue-700');
+            }
+
+            performMainSearch();
+        }
+
+        // Clear all filters
+        function clearAllFilters() {
+            // Clear search input
+            document.getElementById('mainSearchInput').value = '';
+            document.getElementById('mainPriceFilter').value = '';
+            
+            // Clear filters
+            currentFilters = {
+                price: 'all',
+                facilities: [],
+                location: '',
+                search: ''
+            };
+            activeQuickFilters = [];
+
+            // Reset quick filter buttons
+            document.querySelectorAll('.quick-filter-tag').forEach(button => {
+                button.classList.remove('bg-blue-100', 'text-blue-700');
+                button.classList.add('bg-gray-100', 'text-gray-700');
+            });
+
+            // Reset sidebar filters if on kos list page
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('filter-active');
+            });
+            document.querySelector('.filter-btn').classList.add('filter-active'); // First button (all prices)
+
+            document.querySelectorAll('.facility-filter').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            document.getElementById('locationSearch').value = '';
+
+            performMainSearch();
+            showNotification('Semua filter telah dihapus', 'info');
+        }
+
+        // Update search results count
+        function updateSearchResultsCount() {
+            const count = filteredKos.length;
+            const searchTerm = currentFilters.search;
+            
+            if (searchTerm && searchTerm.length >= 2) {
+                const message = count > 0 ? 
+                    `Ditemukan ${count} kos untuk "${searchTerm}"` : 
+                    `Tidak ada kos ditemukan untuk "${searchTerm}"`;
+                
+                // Show temporary notification
+                showSearchNotification(message, count > 0 ? 'info' : 'warning');
+            }
+        }
+
+        // Show search notification (shorter duration)
+        function showSearchNotification(message, type = 'info') {
+            // Remove existing search notifications
+            document.querySelectorAll('.search-notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `search-notification fixed top-20 right-4 z-40 p-3 rounded-lg shadow-lg max-w-sm text-sm ${
+                type === 'info' ? 'bg-blue-500 text-white' :
+                type === 'warning' ? 'bg-yellow-500 text-white' :
+                'bg-gray-500 text-white'
+            }`;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 2000);
+        }
+
+        function logout() {
+            showNotification('Logout berhasil! Terima kasih telah menggunakan layanan kami.', 'success');
+        }
+
+        // Notification function
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                type === 'info' ? 'bg-blue-500 text-white' :
+                'bg-gray-500 text-white'
+            }`;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'998db25bf3e0fe0c',t:'MTc2MjE5MjA0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

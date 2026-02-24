@@ -1,0 +1,110 @@
+stdClass Object
+(
+    [Field] => id
+    [Type] => bigint unsigned
+    [Null] => NO
+    [Key] => PRI
+    [Default] => 
+    [Extra] => auto_increment
+)
+
+stdClass Object
+(
+    [Field] => kos_id
+    [Type] => bigint unsigned
+    [Null] => NO
+    [Key] => MUL
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => nomor_kamar
+    [Type] => varchar(255)
+    [Null] => NO
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => tipe_kamar
+    [Type] => varchar(255)
+    [Null] => NO
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => harga
+    [Type] => decimal(10,2)
+    [Null] => NO
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => luas
+    [Type] => int
+    [Null] => YES
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => fasilitas
+    [Type] => json
+    [Null] => YES
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => status
+    [Type] => enum('tersedia','terisi','maintenance')
+    [Null] => NO
+    [Key] => 
+    [Default] => tersedia
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => gambar
+    [Type] => varchar(255)
+    [Null] => YES
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => created_at
+    [Type] => timestamp
+    [Null] => YES
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+
+stdClass Object
+(
+    [Field] => updated_at
+    [Type] => timestamp
+    [Null] => YES
+    [Key] => 
+    [Default] => 
+    [Extra] => 
+)
+

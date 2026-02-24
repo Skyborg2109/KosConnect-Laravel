@@ -1,0 +1,4 @@
+Uploading file {"filename":"1766203907_694622032d60f.jpg","extension":"jpg","path":"kos","disk":"public"} 
+[2025-12-20 04:11:47] local.ERROR: Path cannot be empty {"userId":16,"exception":"[object] (ValueError(code: 0): Path cannot be empty at C:\\laragon\\www\\Project-232021\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\FilesystemAdapter.php:466)
+[stacktrace]
+#0 C:\\laragon\\www\\Project-232021\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\FilesystemAdapter.php(466): fop
