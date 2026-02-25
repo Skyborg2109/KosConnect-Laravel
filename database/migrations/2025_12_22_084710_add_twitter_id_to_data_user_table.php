@@ -12,11 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('data_user')) {
-            Schema::table('data_user', function (Blueprint $table) {
-                if (!Schema::hasColumn('data_user', 'twitter_id')) {
-                    $table->string('twitter_id')->nullable()->after('facebook_id');
-                }
-            });
+            if (!Schema::hasColumn('data_user', 'twitter_id')) {
+                Schema::table('data_user', function (Blueprint $table) {
+                    // Check if facebook_id exists to use it for 'after' positioning
+                    if (Schema::hasColumn('data_user', 'facebook_id')) {
+                        $table->string('twitter_id')->nullable()->after('facebook_id');
+                    } else {
+                        // If facebook_id is missing (depends on migration order), just add at end or after id
+                        $table->string('twitter_id')->nullable()->after('id');
+                    }
+                });
+            }
         }
     }
 
