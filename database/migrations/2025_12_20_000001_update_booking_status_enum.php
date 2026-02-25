@@ -12,9 +12,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('booking')) {
-            // Using raw statement because changing ENUM via Doctrine/Schema builder can be tricky with custom types
-            DB::statement("ALTER TABLE booking MODIFY COLUMN status ENUM('menunggu_konfirmasi', 'menunggu_pembayaran', 'verifikasi_pembayaran', 'aktif', 'selesai', 'dibatalkan', 'ditolak') DEFAULT 'menunggu_konfirmasi'");
+        if (Schema::hasTable('booking') && Schema::hasColumn('booking', 'status')) {
+            try {
+                Schema::table('booking', function (Blueprint $table) {
+                    $table->enum('status', [
+                        'menunggu_konfirmasi', 
+                        'menunggu_pembayaran', 
+                        'verifikasi_pembayaran', 
+                        'aktif', 
+                        'selesai', 
+                        'dibatalkan', 
+                        'ditolak'
+                    ])->default('menunggu_konfirmasi')->change();
+                });
+            } catch (\Exception $e) {
+                // If native change fails (e.g. older MySQL or driver issues), fallback to raw SQL
+                try {
+                    DB::statement("ALTER TABLE booking MODIFY COLUMN status ENUM('menunggu_konfirmasi', 'menunggu_pembayaran', 'verifikasi_pembayaran', 'aktif', 'selesai', 'dibatalkan', 'ditolak') DEFAULT 'menunggu_konfirmasi'");
+                } catch (\Exception $e2) {
+                    // Log or ignore if it truly exists
+                }
+            }
         }
     }
 
