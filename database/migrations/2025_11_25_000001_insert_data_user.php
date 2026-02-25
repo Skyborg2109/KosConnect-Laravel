@@ -14,52 +14,62 @@ return new class extends Migration
     public function up(): void
     {
         // Insert admin user
-        DB::table('data_user')->insert([
-            'nama_user' => 'Super Admin',
-            'email' => 'admin@website.com',
-            'password' => Hash::make('password123'),
-            'role' => 'admin',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('data_user')->updateOrInsert(
+            ['email' => 'admin@website.com'],
+            [
+                'nama_user' => 'Super Admin',
+                'password' => Hash::make('password123'),
+                'role' => 'admin',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
         // Insert penyewa users
-        DB::table('data_user')->insert([
-            'nama_user' => 'Budi Santoso',
-            'email' => 'pemilik2@website.com',
-            'password' => Hash::make('password123'),
-            'role' => 'penyewa',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('data_user')->updateOrInsert(
+            ['email' => 'penyewa1@website.com'],
+            [
+                'nama_user' => 'Budi Santoso',
+                'password' => Hash::make('password123'),
+                'role' => 'penyewa',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
-        DB::table('data_user')->insert([
-            'nama_user' => 'Siti Nurhaliza',
-            'email' => 'penyewa2@website.com',
-            'password' => Hash::make('password123'),
-            'role' => 'penyewa',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('data_user')->updateOrInsert(
+            ['email' => 'penyewa2@website.com'],
+            [
+                'nama_user' => 'Siti Nurhaliza',
+                'password' => Hash::make('password123'),
+                'role' => 'penyewa',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
         // Insert pemilik users
-        DB::table('data_user')->insert([
-            'nama_user' => 'Ahmad Wijaya',
-            'email' => 'pemilik1@website.com',
-            'password' => Hash::make('password123'),
-            'role' => 'pemilik',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('data_user')->updateOrInsert(
+            ['email' => 'pemilik1@website.com'],
+            [
+                'nama_user' => 'Ahmad Wijaya',
+                'password' => Hash::make('password123'),
+                'role' => 'pemilik',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
-        DB::table('data_user')->insert([
-            'nama_user' => 'Dewi Lestari',
-            'email' => 'pemilik2@website.com',
-            'password' => Hash::make('password123'),
-            'role' => 'pemilik',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('data_user')->updateOrInsert(
+            ['email' => 'pemilik2@website.com'],
+            [
+                'nama_user' => 'Dewi Lestari',
+                'password' => Hash::make('password123'),
+                'role' => 'pemilik',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 
     /**

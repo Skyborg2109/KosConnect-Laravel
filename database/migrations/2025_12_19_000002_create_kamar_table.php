@@ -11,18 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('kamar', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('kos_id')->constrained('kos')->onDelete('cascade');
-            $table->string('nomor_kamar');
-            $table->string('tipe_kamar');
-            $table->decimal('harga', 10, 2);
-            $table->integer('luas')->nullable();
-            $table->json('fasilitas')->nullable();
-            $table->enum('status', ['tersedia', 'terisi', 'maintenance'])->default('tersedia');
-            $table->string('gambar')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('kamar')) {
+            Schema::create('kamar', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('kos_id')->constrained('kos')->onDelete('cascade');
+                $table->string('nomor_kamar');
+                $table->string('tipe_kamar');
+                $table->decimal('harga', 10, 2);
+                $table->integer('luas')->nullable();
+                $table->json('fasilitas')->nullable();
+                $table->enum('status', ['tersedia', 'terisi', 'maintenance'])->default('tersedia');
+                $table->string('gambar')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
