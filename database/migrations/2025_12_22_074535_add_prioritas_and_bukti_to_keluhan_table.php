@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('keluhan', function (Blueprint $table) {
-            if (!Schema::hasColumn('keluhan', 'prioritas')) {
-                $table->string('prioritas')->default('sedang')->after('status');
-            }
-            if (!Schema::hasColumn('keluhan', 'bukti')) {
-                $table->string('bukti')->nullable()->after('prioritas');
-            }
-        });
+        if (Schema::hasTable('keluhan')) {
+            Schema::table('keluhan', function (Blueprint $table) {
+                if (!Schema::hasColumn('keluhan', 'prioritas')) {
+                    $table->string('prioritas')->default('sedang')->after('status');
+                }
+                if (!Schema::hasColumn('keluhan', 'bukti')) {
+                    $table->string('bukti')->nullable()->after('prioritas');
+                }
+            });
+        }
     }
 
     /**

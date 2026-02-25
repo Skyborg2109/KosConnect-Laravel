@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('kos_images', function (Blueprint $table) {
-            // Adding jenis_foto column after kos_id
-            if (!Schema::hasColumn('kos_images', 'jenis_foto')) {
-                $table->enum('jenis_foto', ['bangunan', 'fasilitas', 'kamar', 'kamar_mandi', 'lainnya', 'utama'])->default('lainnya')->after('kos_id');
-            }
-        });
+        if (Schema::hasTable('kos_images')) {
+            Schema::table('kos_images', function (Blueprint $table) {
+                // Adding jenis_foto column after kos_id
+                if (!Schema::hasColumn('kos_images', 'jenis_foto')) {
+                    $table->enum('jenis_foto', ['bangunan', 'fasilitas', 'kamar', 'kamar_mandi', 'lainnya', 'utama'])->default('lainnya')->after('kos_id');
+                }
+            });
+        }
     }
 
     /**

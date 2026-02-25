@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('otp_verifications', function (Blueprint $table) {
-            if (!Schema::hasColumn('otp_verifications', 'token')) {
-                $table->string('token', 64)->nullable()->after('otp_code')->index();
-            }
-        });
+        if (Schema::hasTable('otp_verifications')) {
+            Schema::table('otp_verifications', function (Blueprint $table) {
+                if (!Schema::hasColumn('otp_verifications', 'token')) {
+                    $table->string('token', 64)->nullable()->after('otp_code')->index();
+                }
+            });
+        }
     }
 
     /**

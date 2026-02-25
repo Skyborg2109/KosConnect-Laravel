@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('data_user', function (Blueprint $table) {
-            if (!Schema::hasColumn('data_user', 'password')) {
-                $table->string('password')->after('email');
-            }
-        });
+        if (Schema::hasTable('data_user')) {
+            Schema::table('data_user', function (Blueprint $table) {
+                if (!Schema::hasColumn('data_user', 'password')) {
+                    $table->string('password')->after('email');
+                }
+            });
+        }
     }
 
     /**

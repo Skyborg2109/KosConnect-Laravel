@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('kos', function (Blueprint $table) {
-            if (!Schema::hasColumn('kos', 'jenis_kos')) {
-                $table->enum('jenis_kos', ['campuran', 'putra', 'putri'])->default('campuran')->after('nama_kos');
-            }
-        });
+        if (Schema::hasTable('kos')) {
+            Schema::table('kos', function (Blueprint $table) {
+                if (!Schema::hasColumn('kos', 'jenis_kos')) {
+                    $table->enum('jenis_kos', ['campuran', 'putra', 'putri'])->default('campuran')->after('nama_kos');
+                }
+            });
+        }
     }
 
     /**
