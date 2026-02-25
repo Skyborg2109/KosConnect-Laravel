@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('keluhan', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('penyewa_id')->constrained('data_user')->onDelete('cascade');
-            $table->foreignId('kos_id')->constrained('kos')->onDelete('cascade');
-            $table->string('judul');
-            $table->text('deskripsi');
-            $table->string('kategori')->nullable();
-            $table->enum('status', ['pending', 'diproses', 'selesai'])->default('pending');
-            $table->timestamp('tanggal_selesai')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('keluhan')) {
+            Schema::create('keluhan', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('penyewa_id')->constrained('data_user')->onDelete('cascade');
+                $table->foreignId('kos_id')->constrained('kos')->onDelete('cascade');
+                $table->string('judul');
+                $table->text('deskripsi');
+                $table->string('kategori')->nullable();
+                $table->enum('status', ['pending', 'diproses', 'selesai'])->default('pending');
+                $table->timestamp('tanggal_selesai')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

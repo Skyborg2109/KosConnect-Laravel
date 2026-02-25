@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('booking', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('penyewa_id')->constrained('data_user')->onDelete('cascade');
-            $table->foreignId('kamar_id')->constrained('kamar')->onDelete('cascade');
-            $table->date('tanggal_mulai');
-            $table->date('tanggal_selesai');
-            $table->integer('durasi_bulan');
-            $table->decimal('total_harga', 10, 2);
-            $table->enum('status', ['menunggu_konfirmasi', 'aktif', 'selesai', 'dibatalkan'])->default('menunggu_konfirmasi');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('booking')) {
+            Schema::create('booking', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('penyewa_id')->constrained('data_user')->onDelete('cascade');
+                $table->foreignId('kamar_id')->constrained('kamar')->onDelete('cascade');
+                $table->date('tanggal_mulai');
+                $table->date('tanggal_selesai');
+                $table->integer('durasi_bulan');
+                $table->decimal('total_harga', 10, 2);
+                $table->enum('status', ['menunggu_konfirmasi', 'aktif', 'selesai', 'dibatalkan'])->default('menunggu_konfirmasi');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

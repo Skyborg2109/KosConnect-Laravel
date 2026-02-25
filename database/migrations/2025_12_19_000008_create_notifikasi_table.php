@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifikasi', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('data_user')->onDelete('cascade');
-            $table->string('judul');
-            $table->text('pesan');
-            $table->string('tipe')->nullable();
-            $table->boolean('is_read')->default(false);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('notifikasi')) {
+            Schema::create('notifikasi', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained('data_user')->onDelete('cascade');
+                $table->string('judul');
+                $table->text('pesan');
+                $table->string('tipe')->nullable();
+                $table->boolean('is_read')->default(false);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

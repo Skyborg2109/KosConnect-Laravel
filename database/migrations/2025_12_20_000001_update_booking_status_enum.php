@@ -12,8 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Using raw statement because changing ENUM via Doctrine/Schema builder can be tricky with custom types
-        DB::statement("ALTER TABLE booking MODIFY COLUMN status ENUM('menunggu_konfirmasi', 'menunggu_pembayaran', 'verifikasi_pembayaran', 'aktif', 'selesai', 'dibatalkan', 'ditolak') DEFAULT 'menunggu_konfirmasi'");
+        if (Schema::hasTable('booking')) {
+            // Using raw statement because changing ENUM via Doctrine/Schema builder can be tricky with custom types
+            DB::statement("ALTER TABLE booking MODIFY COLUMN status ENUM('menunggu_konfirmasi', 'menunggu_pembayaran', 'verifikasi_pembayaran', 'aktif', 'selesai', 'dibatalkan', 'ditolak') DEFAULT 'menunggu_konfirmasi'");
+        }
     }
 
     /**

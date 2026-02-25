@@ -11,27 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('kos_images', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('kos_id');
-            $table->string('image_url');
-            $table->integer('order')->default(0);
-            $table->timestamps();
+        if (!Schema::hasTable('kos_images')) {
+            Schema::create('kos_images', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('kos_id');
+                $table->string('image_url');
+                $table->integer('order')->default(0);
+                $table->timestamps();
 
-            // Foreign key constraint (assuming 'kos' table exists and uses 'id')
-            $table->foreign('kos_id')->references('id')->on('kos')->onDelete('cascade');
-        });
+                // Foreign key constraint (assuming 'kos' table exists and uses 'id')
+                $table->foreign('kos_id')->references('id')->on('kos')->onDelete('cascade');
+            });
+        }
 
-        Schema::create('kamar_images', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('kamar_id');
-            $table->string('image_url');
-            $table->integer('order')->default(0);
-            $table->timestamps();
+        if (!Schema::hasTable('kamar_images')) {
+            Schema::create('kamar_images', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('kamar_id');
+                $table->string('image_url');
+                $table->integer('order')->default(0);
+                $table->timestamps();
 
-            // Foreign key constraint (assuming 'kamar' table exists and uses 'id')
-            $table->foreign('kamar_id')->references('id')->on('kamar')->onDelete('cascade');
-        });
+                // Foreign key constraint (assuming 'kamar' table exists and uses 'id')
+                $table->foreign('kamar_id')->references('id')->on('kamar')->onDelete('cascade');
+            });
+        }
     }
 
     /**

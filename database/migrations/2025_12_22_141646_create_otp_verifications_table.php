@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('otp_verifications', function (Blueprint $table) {
-            $table->id();
-            $table->string('email')->index();
-            $table->string('otp_code', 6);
-            $table->timestamp('expires_at');
-            $table->boolean('verified')->default(false);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('otp_verifications')) {
+            Schema::create('otp_verifications', function (Blueprint $table) {
+                $table->id();
+                $table->string('email')->index();
+                $table->string('otp_code', 6);
+                $table->timestamp('expires_at');
+                $table->boolean('verified')->default(false);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

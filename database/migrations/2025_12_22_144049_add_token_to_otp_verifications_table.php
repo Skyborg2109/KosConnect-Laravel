@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('otp_verifications', function (Blueprint $table) {
-            $table->string('token', 64)->nullable()->after('otp_code')->index();
+            if (!Schema::hasColumn('otp_verifications', 'token')) {
+                $table->string('token', 64)->nullable()->after('otp_code')->index();
+            }
         });
     }
 

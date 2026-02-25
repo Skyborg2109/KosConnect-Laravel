@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('data_user', function (Blueprint $table) {
-            $table->string('twitter_id')->nullable()->after('facebook_id');
+            if (!Schema::hasColumn('data_user', 'twitter_id')) {
+                $table->string('twitter_id')->nullable()->after('facebook_id');
+            }
         });
     }
 

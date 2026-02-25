@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('wishlist', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('penyewa_id')->constrained('data_user')->onDelete('cascade');
-            $table->foreignId('kos_id')->constrained('kos')->onDelete('cascade');
-            $table->timestamps();
-            
-            // Prevent duplicate wishlist entries
-            $table->unique(['penyewa_id', 'kos_id']);
-        });
+        if (!Schema::hasTable('wishlist')) {
+            Schema::create('wishlist', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('penyewa_id')->constrained('data_user')->onDelete('cascade');
+                $table->foreignId('kos_id')->constrained('kos')->onDelete('cascade');
+                $table->timestamps();
+                
+                // Prevent duplicate wishlist entries
+                $table->unique(['penyewa_id', 'kos_id']);
+            });
+        }
     }
 
     /**

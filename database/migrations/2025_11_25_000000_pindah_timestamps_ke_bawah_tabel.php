@@ -12,14 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('data_user', function (Blueprint $table) {
-            // Drop existing timestamps
-            $table->dropColumn('created_at');
-            $table->dropColumn('updated_at');
+            // Drop existing timestamps if they exist
+            if (Schema::hasColumn('data_user', 'created_at')) {
+                $table->dropColumn('created_at');
+            }
+            if (Schema::hasColumn('data_user', 'updated_at')) {
+                $table->dropColumn('updated_at');
+            }
         });
 
         Schema::table('data_user', function (Blueprint $table) {
-            // Re-add timestamps at the bottom
-            $table->timestamps();
+            // Re-add timestamps at the bottom if they don't exist
+            if (!Schema::hasColumn('data_user', 'created_at')) {
+                $table->timestamps();
+            }
         });
     }
 
