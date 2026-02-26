@@ -93,20 +93,5 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // Extend Socialite for Twitter fix
-        \Laravel\Socialite\Facades\Socialite::extend('twitter', function ($app) {
-            \Log::info('Custom Twitter Provider: Extending twitter driver');
-            $config = $app['config']['services.twitter'];
-            
-            $server = new \App\Services\Socialite\CustomTwitterServer([
-                'identifier' => $config['client_id'],
-                'secret' => $config['client_secret'],
-                'callback_uri' => $config['redirect'],
-            ]);
-            
-            return new \App\Services\Socialite\CustomTwitterProvider(
-                $app['request'], $server
-            );
-        });
     }
 }
