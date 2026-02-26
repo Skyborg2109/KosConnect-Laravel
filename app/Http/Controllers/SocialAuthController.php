@@ -84,12 +84,7 @@ class SocialAuthController extends Controller
             $logMessage = date('Y-m-d H:i:s') . " - Google Error: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n";
             file_put_contents(storage_path('logs/oauth_debug.log'), $logMessage, FILE_APPEND);
             
-            $errorMessage = 'Gagal login dengan Google. ';
-            if (str_contains($e->getMessage(), 'Could not find a user')) {
-                $errorMessage .= 'User tidak ditemukan atau akses ditolak.';
-            } else {
-                $errorMessage .= 'Terjadi kesalahan teknis. Silakan coba beberapa saat lagi.';
-            }
+            $errorMessage = 'Gagal login dengan Google. Debug: ' . $e->getMessage() . ' (Line: ' . $e->getLine() . ') ' . get_class($e);
             
             return redirect('/login')->with('error', $errorMessage);
         }
