@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS in production
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Fix for "key too long" error on older MySQL versions
         \Illuminate\Support\Facades\Schema::defaultStringLength(191);
 
