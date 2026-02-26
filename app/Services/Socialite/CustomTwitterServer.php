@@ -57,27 +57,5 @@ class CustomTwitterServer extends Twitter
         return 'https://api.twitter.com/oauth/access_token';
     }
 
-    // =========================================================================
-    // OVERRIDE HTTP CLIENT (Handle SSL and modern requirements)
-    // =========================================================================
-    
-    public function createHttpClient()
-    {
-        $config = [
-            'headers' => [
-                'User-Agent' => 'Laravel-OAuth-Client/2.0',
-                'Accept' => 'application/json',
-            ],
-            'timeout' => 30,
-            'connect_timeout' => 10,
-        ];
-
-        // For production, ensure proper SSL verification
-        // Only disable in local development if absolutely necessary
-        if (config('app.env') === 'local' && config('app.debug') === true) {
-            $config['verify'] = false;
-        }
-
-        return new Client($config);
-    }
+    // Removed createHttpClient as it was stripping OAuth 1.0 signatures.
 }
